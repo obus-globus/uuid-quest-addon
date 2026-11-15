@@ -6,12 +6,14 @@ import java.time.Duration
 class UuidQuestAddon : LiquidBounceAddon() {
 
     override fun onInitialize() {
-        registerModules(ModuleUuidQuest)
+        config("UuidQuest", mutableListOf(UuidQuestSettings))
+        UuidQuestTracker.addon = this
+        registerListeners(UuidQuestTracker)
         registerCommand(CommandUuidQuest)
     }
 
     override fun onStopping() {
-        UuidQuestSubmitter.flushBlocking(ModuleUuidQuest.note, Duration.ofSeconds(5))
+        UuidQuestSubmitter.flushBlocking(UuidQuestSettings.note, Duration.ofSeconds(5))
     }
 
 }
