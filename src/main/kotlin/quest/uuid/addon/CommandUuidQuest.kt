@@ -35,13 +35,16 @@ object CommandUuidQuest : CommandRegistrar {
                     val recent = SubmissionHistory.recent(10)
                     if (recent.isEmpty()) chat("No submissions yet")
                     recent.forEach { submission ->
-                        val line = buildString {
-                            append(time.format(Instant.ofEpochMilli(submission.createdAt)))
+                        val details = buildString {
                             append(" ${submission.sent} sent, ${submission.state}")
-                            if (submission.finished) append(" | ${UuidQuestSubmitter.summary(submission)}")
+                            if (submission.finished) append(", ${summaryCounts(submission)}")
                             submission.note?.let { append(" | $it") }
                         }
-                        chat(line)
+                        chat(
+                            gray(time.format(Instant.ofEpochMilli(submission.createdAt)) + " ")
+                                .append(submissionLink(submission.submitId))
+                                .append(gray(details))
+                        )
                     }
                     1
                 }

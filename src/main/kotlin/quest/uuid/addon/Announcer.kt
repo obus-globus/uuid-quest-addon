@@ -5,6 +5,7 @@ import net.ccbluex.liquidbounce.event.events.NotificationEvent
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.client.notification
+import net.minecraft.network.chat.Component
 import java.util.concurrent.ConcurrentLinkedQueue
 
 enum class AnnounceTarget(override val tag: String) : Tagged {
@@ -26,11 +27,12 @@ enum class AnnounceMode(override val tag: String, val targets: Set<AnnounceTarge
  */
 object Announcer {
 
-    private class Announcement(val message: String, val targets: Set<AnnounceTarget>)
+    private class Announcement(val message: Component, val targets: Set<AnnounceTarget>)
 
     private val queue = ConcurrentLinkedQueue<Announcement>()
 
-    fun announce(message: String, targets: Set<AnnounceTarget>) {
+    /** Notifications get the plain text of [message]; links only work in chat. */
+    fun announce(message: Component, targets: Set<AnnounceTarget>) {
         if (targets.isNotEmpty()) queue.add(Announcement(message, targets.toSet()))
     }
 
@@ -43,7 +45,7 @@ object Announcer {
                 chat(announcement.message)
             }
             if (AnnounceTarget.NOTIFICATION in announcement.targets) {
-                notification("uuid.quest", announcement.message, NotificationEvent.Severity.SUCCESS)
+                notification("uuid.quest", announcement.message.string, NotificationEvent.Severity.SUCCESS)
             }
         }
     }

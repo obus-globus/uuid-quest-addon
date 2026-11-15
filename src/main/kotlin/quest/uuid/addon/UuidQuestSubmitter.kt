@@ -3,6 +3,7 @@ package quest.uuid.addon
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import net.minecraft.network.chat.Component
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -61,7 +62,7 @@ object UuidQuestSubmitter {
      * Sends up to [MAX_BATCH] pending UUIDs unless a request is running or the server asked to wait.
      * [report] receives a one-line summary of the outcome.
      */
-    fun flush(note: String, report: (String) -> Unit = {}) {
+    fun flush(note: String, report: (Component) -> Unit = {}) {
         val now = System.currentTimeMillis()
         if (pending.isEmpty() || now < notBefore || !inFlight.compareAndSet(false, true)) return
         lastFlush = now
@@ -130,7 +131,7 @@ object UuidQuestSubmitter {
         note: String,
         response: HttpResponse<String>?,
         error: Throwable?,
-        report: (String) -> Unit,
+        report: (Component) -> Unit,
     ) {
         val status = response?.statusCode()
         when {
@@ -155,14 +156,17 @@ object UuidQuestSubmitter {
                     "uuid.quest accepted submission ${submission.submitId}: ${submission.count("queued")} queued, " +
                         "${submission.count("cracked")} cracked, ${submission.count("duplicate")} duplicate"
                 )
-                report("uuid.quest queued ${submission.count("queued")} of ${batch.size} UUIDs")
+                report(
+                    gray("uuid.quest ").append(submissionLink(submission.submitId))
+                        .append(gray(": queued ${submission.count("queued")} of ${batch.size} UUIDs"))
+                )
             }
 
             status == 429 -> {
                 val retryAfter = response.headers().firstValue("Retry-After").map(String::toLongOrNull).orElse(null)
                 retryLater(batch, (retryAfter ?: 60L) * 1000L)
                 log.info("uuid.quest is rate limiting, retrying ${batch.size} UUIDs in ${retryAfter ?: 60}s")
-                report("uuid.quest is rate limiting, retrying in ${retryAfter ?: 60}s")
+                report(gray("uuid.quest is rate limiting, retrying in ${retryAfter ?: 60}s"))
             }
 
             status >= 500 -> {
@@ -172,7 +176,7 @@ object UuidQuestSubmitter {
 
             else -> {
                 log.warn("uuid.quest rejected ${batch.size} UUIDs ($status): ${response.body()}")
-                report("uuid.quest rejected the submission ($status)")
+                report(gray("uuid.quest rejected the submission ($status)"))
             }
         }
     }
@@ -199,7 +203,7 @@ object UuidQuestSubmitter {
                     200 -> {
                         submission.update(JsonParser.parseString(response.body()).asJsonObject)
                         if (submission.finished) {
-                            log.info(summary(submission))
+                            log.info(summaryLine(submission))
                             onFinished(submission)
                         }
                     }
@@ -216,13 +220,6 @@ object UuidQuestSubmitter {
                 polling.set(false)
             }
         }
-    }
-
-    fun summary(submission: Submission) = buildString {
-        append("uuid.quest ${submission.submitId.take(8)}: ")
-        append("${submission.count("forwarded")} new, ${submission.count("alreadyKnown")} known, ")
-        append("${submission.count("fake")} fake")
-        if (submission.earlyExited) append(", stopped early")
     }
 
     private fun retryLater(batch: List<UUID>, delayMs: Long) {
