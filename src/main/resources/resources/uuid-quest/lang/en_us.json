@@ -3,5 +3,7 @@
   "liquidbounce.module.uuidQuest.value.interval.description": "Seconds between submissions.",
   "liquidbounce.module.uuidQuest.value.tabList.description": "Collect UUIDs from the tab list.",
   "liquidbounce.module.uuidQuest.value.worldPlayers.description": "Collect UUIDs from players in the world.",
-  "liquidbounce.module.uuidQuest.value.notify.description": "Show a chat message after each submission."
+  "liquidbounce.module.uuidQuest.value.note.description": "Optional label sent with each submission (up to 200 characters).",
+  "liquidbounce.module.uuidQuest.value.announce.description": "Where to announce UUIDs that were new to uuid.quest. Shown once you are in a world.",
+  "liquidbounce.module.uuidQuest.value.verbose.description": "Show the outcome of every submission in chat."
 }
