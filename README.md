@@ -11,12 +11,25 @@ them against Mojang and adds new ones to its dataset.
 - Keeps the last 100 submissions with their uuid.quest result in `LiquidBounce/uuid-quest/submissions.json`
   and keeps polling unfinished ones, also after a restart. An optional `Note` is sent with each one.
 - Announces UUIDs that turned out new to uuid.quest in chat and/or as a LiquidBounce notification
-  (`Announce`), held back until you are in a world. `Verbose` adds every submission's outcome to chat.
+  (`Announce`: Off, Chat, Notification, Both), held back until you are in a world. `Verbose` adds every
+  submission's outcome to chat.
 
 ## Use
 
 1. `./gradlew build` (JDK 25), then put `build/libs/uuid-quest-addon-<version>.jar` into `mods/`
    next to LiquidBounce.
-2. Enable the `UuidQuest` module (Misc).
+2. It runs on its own as soon as LiquidBounce starts; there is no module to enable.
 3. `.uuidquest` shows totals, `.uuidquest submissions` the recent submissions and their results,
-   and `.uuidquest flush` sends the pending UUIDs now.
+   `.uuidquest settings` the current settings, and `.uuidquest flush` sends the pending UUIDs now.
+
+## Settings
+
+Stored in `LiquidBounce/uuidquest.json`. Change them with LiquidBounce's `.value` command, e.g.
+
+```
+.value set uuidQuest.settings.note "my label"
+.value set uuidQuest.settings.announce Both
+.value set uuidQuest.settings.enabled off
+```
+
+`Enabled`, `Interval` (30 to 600 s), `TabList`, `WorldPlayers`, `Note`, `Announce`, `Verbose`.

@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * `.uuidquest` shows totals, `.uuidquest submissions` the recent submissions and their results,
- * `.uuidquest flush` sends the pending UUIDs now.
+ * `.uuidquest settings` the current settings, `.uuidquest flush` sends the pending UUIDs now.
  */
 object CommandUuidQuest : CommandRegistrar {
 
@@ -46,9 +46,16 @@ object CommandUuidQuest : CommandRegistrar {
                     1
                 }
             }
+            literal("settings") {
+                exec {
+                    UuidQuestSettings.collectValuesRecursively().forEach { value -> chat("${value.name}: ${value.get()}") }
+                    chat("Change one with .value set uuidQuest.settings.<name> <value>")
+                    1
+                }
+            }
             literal("flush") {
                 exec {
-                    UuidQuestSubmitter.flush(ModuleUuidQuest.note) { message -> mc.execute { chat(message) } }
+                    UuidQuestSubmitter.flush(UuidQuestSettings.note) { message -> mc.execute { chat(message) } }
                     1
                 }
             }

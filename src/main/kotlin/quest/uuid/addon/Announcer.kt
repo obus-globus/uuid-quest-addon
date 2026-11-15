@@ -12,6 +12,14 @@ enum class AnnounceTarget(override val tag: String) : Tagged {
     NOTIFICATION("Notification"),
 }
 
+/** A single choice rather than a set, since `.value set` cannot parse multi-choice values. */
+enum class AnnounceMode(override val tag: String, val targets: Set<AnnounceTarget>) : Tagged {
+    OFF("Off", emptySet()),
+    CHAT("Chat", setOf(AnnounceTarget.CHAT)),
+    NOTIFICATION("Notification", setOf(AnnounceTarget.NOTIFICATION)),
+    BOTH("Both", setOf(AnnounceTarget.CHAT, AnnounceTarget.NOTIFICATION)),
+}
+
 /**
  * Queues messages from any thread and shows them once the player is in a world, since chat and
  * notifications are not visible from the menus.
