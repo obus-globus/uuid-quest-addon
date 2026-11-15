@@ -45,6 +45,10 @@ object UuidQuestSubmitter {
     val pendingCount get() = pending.size
     private val polling = AtomicBoolean(false)
 
+    /** `<add-on id>/<version>`, set from the add-on's metadata on initialization. */
+    @Volatile
+    var userAgent = "uuid-quest"
+
     fun offer(uuid: UUID) {
         if (remembered.put(uuid, Unit) == null) {
             pending.add(uuid)
@@ -116,7 +120,7 @@ object UuidQuestSubmitter {
         return HttpRequest.newBuilder(submitEndpoint)
             .timeout(timeout)
             .header("Content-Type", "application/json")
-            .header("User-Agent", "uuid-quest-addon")
+            .header("User-Agent", userAgent)
             .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
             .build()
     }
@@ -186,7 +190,7 @@ object UuidQuestSubmitter {
 
         val request = HttpRequest.newBuilder(URI("$API/submissions/${submission.submitId}"))
             .timeout(REQUEST_TIMEOUT)
-            .header("User-Agent", "uuid-quest-addon")
+            .header("User-Agent", userAgent)
             .GET()
             .build()
         http.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete { response, error ->
