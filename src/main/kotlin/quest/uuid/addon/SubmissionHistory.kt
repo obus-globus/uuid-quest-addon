@@ -4,7 +4,6 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import net.ccbluex.liquidbounce.config.ConfigSystem
-import net.ccbluex.liquidbounce.utils.client.logger
 
 /**
  * One `POST /v1/uuids` and what uuid.quest reported about it. [counts] mirrors the API's
@@ -55,7 +54,7 @@ object SubmissionHistory {
             runCatching {
                 val type = object : TypeToken<List<Submission>>() {}.type
                 submissions.addAll(gson.fromJson<List<Submission>>(file.readText(), type))
-            }.onFailure { logger.warn("Could not read $file", it) }
+            }.onFailure { log.warn("Could not read $file", it) }
         }
     }
 
@@ -80,7 +79,7 @@ object SubmissionHistory {
         runCatching {
             file.parentFile.mkdirs()
             file.writeText(gson.toJson(submissions))
-        }.onFailure { logger.warn("Could not write $file", it) }
+        }.onFailure { log.warn("Could not write $file", it) }
     }
 
 }

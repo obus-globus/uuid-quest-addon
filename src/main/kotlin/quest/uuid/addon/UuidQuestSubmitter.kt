@@ -3,7 +3,6 @@ package quest.uuid.addon
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import net.ccbluex.liquidbounce.utils.client.logger
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -64,6 +63,7 @@ object UuidQuestSubmitter {
         lastFlush = now
 
         val batch = drainBatch()
+        log.info("Sending ${batch.size} UUIDs to uuid.quest (${pending.size} still pending)")
         http.sendAsync(request(batch, note, REQUEST_TIMEOUT), HttpResponse.BodyHandlers.ofString())
             .whenComplete { response, error ->
                 try {
@@ -88,12 +88,13 @@ object UuidQuestSubmitter {
         while (pending.isNotEmpty() && remaining() > Duration.ZERO && notBefore == 0L) {
             if (!inFlight.compareAndSet(false, true)) return
             val batch = drainBatch()
+            log.info("Sending ${batch.size} UUIDs to uuid.quest before exit")
             try {
                 val response = http.send(request(batch, note, remaining()), HttpResponse.BodyHandlers.ofString())
-                handle(batch, note, response, null) { logger.info(it) }
+                handle(batch, note, response, null) {}
             } catch (e: Exception) {
                 pending.addAll(batch)
-                logger.warn("uuid.quest submission on shutdown failed, ${pending.size} UUIDs not sent", e)
+                log.warn("uuid.quest submission on shutdown failed, ${pending.size} UUIDs not sent", e)
                 return
             } finally {
                 inFlight.set(false)
@@ -131,7 +132,7 @@ object UuidQuestSubmitter {
         when {
             response == null || status == null -> {
                 retryLater(batch, ERROR_BACKOFF_MS)
-                logger.warn("uuid.quest submission failed, retrying later", error)
+                log.warn("uuid.quest submission failed, retrying later", error)
             }
 
             status == 202 -> {
@@ -146,22 +147,27 @@ object UuidQuestSubmitter {
                         .associate { (key, value) -> key to value.asInt },
                 )
                 SubmissionHistory.add(submission)
+                log.info(
+                    "uuid.quest accepted submission ${submission.submitId}: ${submission.count("queued")} queued, " +
+                        "${submission.count("cracked")} cracked, ${submission.count("duplicate")} duplicate"
+                )
                 report("uuid.quest queued ${submission.count("queued")} of ${batch.size} UUIDs")
             }
 
             status == 429 -> {
                 val retryAfter = response.headers().firstValue("Retry-After").map(String::toLongOrNull).orElse(null)
                 retryLater(batch, (retryAfter ?: 60L) * 1000L)
+                log.info("uuid.quest is rate limiting, retrying ${batch.size} UUIDs in ${retryAfter ?: 60}s")
                 report("uuid.quest is rate limiting, retrying in ${retryAfter ?: 60}s")
             }
 
             status >= 500 -> {
                 retryLater(batch, ERROR_BACKOFF_MS)
-                logger.warn("uuid.quest answered $status, retrying later")
+                log.warn("uuid.quest answered $status, retrying later")
             }
 
             else -> {
-                logger.warn("uuid.quest rejected ${batch.size} UUIDs ($status): ${response.body()}")
+                log.warn("uuid.quest rejected ${batch.size} UUIDs ($status): ${response.body()}")
                 report("uuid.quest rejected the submission ($status)")
             }
         }
@@ -188,7 +194,10 @@ object UuidQuestSubmitter {
                 when (response?.statusCode()) {
                     200 -> {
                         submission.update(JsonParser.parseString(response.body()).asJsonObject)
-                        if (submission.finished) onFinished(submission)
+                        if (submission.finished) {
+                            log.info(summary(submission))
+                            onFinished(submission)
+                        }
                     }
 
                     404 -> submission.state = Submission.STATE_EXPIRED
@@ -196,7 +205,7 @@ object UuidQuestSubmitter {
                         (response.headers().firstValue("Retry-After").map(String::toLongOrNull).orElse(null) ?: 60L) *
                         1000L
 
-                    else -> logger.warn("uuid.quest status poll failed (${response?.statusCode()})", error)
+                    else -> log.warn("uuid.quest status poll failed (${response?.statusCode()})", error)
                 }
                 SubmissionHistory.save()
             } finally {
