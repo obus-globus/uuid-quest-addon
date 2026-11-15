@@ -1,7 +1,7 @@
 # lb-addon-uuid-quest
 
 LiquidBounce add-on that collects the premium (v4) player UUIDs the client sees and submits them to
-uuid.quest, our public UUID submit API in front of mcid (`/home/clawd/obus/mcid/uuid-quest/`). Built
+uuid.quest, our public UUID submit API in front of mcid (`../../mcid/uuid-quest/` on our machine). Built
 from [`../lb-addon-workspace`](../lb-addon-workspace) (CCBlueX's add-on template); its CLAUDE.md
 covers the add-on build setup and traps. User-facing behaviour is in [README.md](README.md).
 
