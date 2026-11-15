@@ -34,5 +34,5 @@ covers the add-on build setup and traps. User-facing behaviour is in [README.md]
 CI (`.github/workflows/build.yml`) refreshes the `snapshot` pre-release on every push to `main`. A
 published, non-prerelease GitHub release tagged `v<mod_version>+<mc>` also uploads the jar to the
 LiquidBounce marketplace as item 894 (repo variable `MARKETPLACE_ITEM_ID`). That step needs the repo secret
-`API_TOKEN`, our LiquidBounce API token from `../../docs/credentials.md`; it is not set yet
+`API_TOKEN`, our LiquidBounce API token from `../../docs/credentials.md` on our machine; it is not set yet
 (owner, 2026-11-16), so such a release would fail at the upload.
