@@ -1,0 +1,7 @@
+{
+  "liquidbounce.module.uuidQuest.description": "Submits the premium (v4) player UUIDs you see to uuid.quest.",
+  "liquidbounce.module.uuidQuest.value.interval.description": "Seconds between submissions.",
+  "liquidbounce.module.uuidQuest.value.tabList.description": "Collect UUIDs from the tab list.",
+  "liquidbounce.module.uuidQuest.value.worldPlayers.description": "Collect UUIDs from players in the world.",
+  "liquidbounce.module.uuidQuest.value.notify.description": "Show a chat message after each submission."
+}
