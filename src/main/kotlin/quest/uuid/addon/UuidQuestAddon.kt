@@ -6,6 +6,7 @@ import java.time.Duration
 class UuidQuestAddon : LiquidBounceAddon() {
 
     override fun onInitialize() {
+        UuidQuestSubmitter.userAgent = "$id/$version"
         config("UuidQuest", mutableListOf(UuidQuestSettings))
         UuidQuestTracker.addon = this
         registerListeners(UuidQuestTracker)
