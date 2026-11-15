@@ -14,7 +14,9 @@ class UuidQuestAddon : LiquidBounceAddon() {
     }
 
     override fun onStopping() {
-        UuidQuestSubmitter.flushBlocking(UuidQuestSettings.note, Duration.ofSeconds(5))
+        if (UuidQuestSettings.enabled) {
+            UuidQuestSubmitter.flushBlocking(UuidQuestSettings.note, Duration.ofSeconds(5))
+        }
     }
 
 }

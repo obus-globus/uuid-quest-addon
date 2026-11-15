@@ -1,8 +1,6 @@
 package quest.uuid.addon
 
 import net.ccbluex.liquidbounce.event.EventListener
-import net.ccbluex.liquidbounce.event.tickHandler
-import net.ccbluex.liquidbounce.event.waitTicks
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.network.chat.Component
 
@@ -16,8 +14,11 @@ object UuidQuestTracker : EventListener {
 
     override fun parent() = addon
 
-    @Suppress("unused")
-    private val tickHandler = tickHandler {
+    init {
+        every(20, ::tick)
+    }
+
+    private fun tick() {
         val settings = UuidQuestSettings
         if (settings.enabled) {
             collect()
@@ -27,7 +28,6 @@ object UuidQuestTracker : EventListener {
         }
         UuidQuestSubmitter.pollUnfinished(::onFinished)
         Announcer.deliver()
-        waitTicks(20)
     }
 
     private fun collect() {

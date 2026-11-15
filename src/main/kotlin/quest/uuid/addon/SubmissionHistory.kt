@@ -3,7 +3,10 @@ package quest.uuid.addon
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
-import net.ccbluex.liquidbounce.config.ConfigSystem
+import net.ccbluex.liquidbounce.utils.client.mc
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * One `POST /v1/uuids` and what uuid.quest reported about it. [counts] mirrors the API's
@@ -23,10 +26,18 @@ class Submission(
 
     fun count(name: String) = counts[name] ?: 0
 
+    /** Gson skips the constructor, so an entry missing a field comes back with nulls in non-null fields. */
+    @Suppress("SENSELESS_COMPARISON")
+    val isComplete get() = submitId != null && state != null && counts != null
+
+    /** Parses everything before assigning, so a malformed status cannot leave the submission half updated. */
     fun update(status: JsonObject) {
-        state = status.get("state").asString
-        counts = status.getAsJsonObject("counts").entrySet().associate { (key, value) -> key to value.asInt }
-        earlyExited = status.get("earlyExited")?.asBoolean ?: false
+        val newState = status.get("state").asString
+        val newCounts = parseCounts(status.getAsJsonObject("counts"))
+        val newEarlyExited = status.get("earlyExited")?.asBoolean ?: false
+        counts = newCounts
+        earlyExited = newEarlyExited
+        state = newState
     }
 
     companion object {
@@ -37,6 +48,9 @@ class Submission(
     }
 }
 
+fun parseCounts(counts: JsonObject): Map<String, Int> =
+    counts.entrySet().associate { (key, value) -> key to value.asInt }
+
 /**
  * The most recent submissions, kept in `LiquidBounce/uuid-quest/submissions.json` so unfinished ones
  * are still polled after a restart.
@@ -45,16 +59,21 @@ object SubmissionHistory {
 
     private const val MAX_KEPT = 100
 
-    private val file = ConfigSystem.rootFolder.resolve("uuid-quest").resolve("submissions.json")
+    private val file = File(mc.gameDirectory, "LiquidBounce").resolve("uuid-quest").resolve("submissions.json")
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val submissions = ArrayList<Submission>()
 
     init {
         if (file.isFile) {
             runCatching {
-                val type = object : TypeToken<List<Submission>>() {}.type
-                submissions.addAll(gson.fromJson<List<Submission>>(file.readText(), type))
-            }.onFailure { log.warn("Could not read $file", it) }
+                val type = object : TypeToken<List<Submission?>>() {}.type
+                val loaded = gson.fromJson<List<Submission?>>(file.readText(), type).orEmpty()
+                submissions.addAll(loaded.filterNotNull().filter(Submission::isComplete))
+            }.onFailure {
+                val backup = File(file.parentFile, "submissions.json.bak")
+                file.renameTo(backup)
+                log.warn("Could not read $file, moved it to $backup", it)
+            }
         }
     }
 
@@ -74,11 +93,14 @@ object SubmissionHistory {
     @Synchronized
     fun total(count: String) = submissions.sumOf { it.count(count) }
 
+    /** Writes a temporary file and moves it over the old one, so a crash mid-write keeps the previous file. */
     @Synchronized
     fun save() {
         runCatching {
             file.parentFile.mkdirs()
-            file.writeText(gson.toJson(submissions))
+            val temp = File(file.parentFile, "${file.name}.tmp")
+            temp.writeText(gson.toJson(submissions))
+            Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
         }.onFailure { log.warn("Could not write $file", it) }
     }
 

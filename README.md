@@ -6,8 +6,8 @@ them against Mojang and adds new ones to its dataset.
 - Collects UUIDs from the tab list and from players in the world.
 - Only sends version 4 UUIDs with a valid Minecraft name. Offline-mode (version 3) and most NPC
   UUIDs are skipped.
-- Sends in batches (default every 60 seconds), when the module is turned off, and when the game
-  closes. Honours the service's `Retry-After` on rate limits.
+- Sends in batches (default every 60 seconds), when `Enabled` is turned off, and when the game
+  closes (unless `Enabled` is off). Honours the service's `Retry-After` on rate limits.
 - Keeps the last 100 submissions with their uuid.quest result in `LiquidBounce/uuid-quest/submissions.json`
   and keeps polling unfinished ones, also after a restart. An optional `Note` is sent with each one.
 - Announces UUIDs that turned out new to uuid.quest in chat and/or as a LiquidBounce notification
