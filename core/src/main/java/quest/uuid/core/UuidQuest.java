@@ -19,6 +19,8 @@ import java.util.function.LongSupplier;
  */
 public final class UuidQuest {
 
+    public static final String WEBSITE = "https://uuid.quest/";
+
     /** How long closing the game may wait for the final batch. */
     public static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
 
@@ -160,10 +162,13 @@ public final class UuidQuest {
     }
 
     /** {@code .uuidquest}: what was collected and what uuid.quest made of it. */
-    public String totals() {
-        return "Seen " + submitter.rememberedCount() + " this session, pending " + submitter.pendingCount() + ". "
-            + "Submitted " + history.total("received") + ", new to uuid.quest " + history.total("forwarded")
-            + ", already known " + history.total("alreadyKnown");
+    public QuestText totals() {
+        return QuestText.builder()
+            .text("Seen " + submitter.rememberedCount() + " this session, pending " + submitter.pendingCount() + ". "
+                + "Submitted " + history.total("received") + ", new to uuid.quest " + history.total("forwarded")
+                + ", already known " + history.total("alreadyKnown") + ". ")
+            .link("uuid.quest", WEBSITE, "Open " + WEBSITE)
+            .build();
     }
 
     /** {@code .uuidquest submissions}: the last ten, newest first; empty if there are none. */

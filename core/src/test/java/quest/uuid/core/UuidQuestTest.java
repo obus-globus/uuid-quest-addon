@@ -212,7 +212,10 @@ class UuidQuestTest {
         transport.accepted("s1", 1);
         assertEquals("Sending the pending UUIDs (0 left)", quest.flushNow(text -> {
         }));
-        assertEquals("Seen 1 this session, pending 0. Submitted 1, new to uuid.quest 0, already known 0", quest.totals());
+        assertEquals("Seen 1 this session, pending 0. Submitted 1, new to uuid.quest 0, already known 0. uuid.quest",
+            quest.totals().plain());
+        assertEquals(new QuestText.Link("uuid.quest", UuidQuest.WEBSITE, "Open " + UuidQuest.WEBSITE),
+            quest.totals().parts().get(1));
         assertEquals(1, quest.recentSubmissions().size());
         assertTrue(quest.recentSubmissions().get(0).plain().endsWith(" s1 1 sent, queued"));
     }

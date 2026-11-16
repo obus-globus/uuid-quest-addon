@@ -22,7 +22,7 @@ class CommandUuidQuest(private val quest: UuidQuest) : CommandRegistrar {
     override fun register(dispatcher: CommandDispatcher<ClientCommandSource>) {
         dispatcher.register(
             literal("uuidquest")
-                .executes { chat(quest.totals()); 1 }
+                .executes { chat(quest.totals().toComponent()); 1 }
                 .then(literal("submissions").executes { showSubmissions(); 1 })
                 .then(literal("settings").executes { showSettings(); 1 })
                 .then(literal("flush").executes { flush(); 1 })

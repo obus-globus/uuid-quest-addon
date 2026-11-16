@@ -43,7 +43,10 @@ final class UuidQuestCommand {
     static void register(CommandDispatcher<FabricClientCommandSource> dispatcher, UuidQuestClient mod) {
         StoredSettings settings = mod.settings();
         dispatcher.register(literal("uuidquest")
-            .executes(context -> reply(context, mod.quest().totals()))
+            .executes(context -> {
+                context.getSource().sendFeedback(Texts.toComponent(mod.quest().totals()));
+                return Command.SINGLE_SUCCESS;
+            })
             .then(literal("submissions").executes(context -> showSubmissions(context, mod)))
             .then(literal("settings").executes(context -> showSettings(context, settings)))
             .then(literal("flush").executes(context -> flush(context, mod)))
