@@ -131,4 +131,13 @@ class UpdateCheckerTest {
         assertEquals("uuid-quest/1.0.0 (liquidbounce; minecraft 26.3)", UuidQuest.userAgent("1.0.0+26.3", "liquidbounce", "26.3"));
     }
 
+    @Test
+    void damagedCachedAssetsAreSkipped() throws Exception {
+        java.nio.file.Files.writeString(dir.resolve("update-check.json"),
+            "{\"checkedAt\":" + clock.now + ",\"tag\":\"v1.1.0+26.3\",\"releaseUrl\":\"https://example.test/r\","
+                + "\"assets\":[{\"url\":\"https://example.test/x.jar\"},null]}");
+        checker("1.0.0+26.3", "uuid-quest-addon-").checkOnce(updates::add);
+        assertEquals(List.of(new UpdateChecker.Update("1.1.0", "https://example.test/r")), updates);
+    }
+
 }

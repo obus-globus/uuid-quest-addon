@@ -11,7 +11,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -133,6 +132,7 @@ public final class UpdateChecker {
         if (plus >= 0 && cache.assets != null) {
             String suffix = "+" + currentVersion.substring(plus + 1) + ".jar";
             for (Asset asset : cache.assets) {
+                if (asset == null || asset.name == null || asset.url == null) continue;
                 if (asset.name.startsWith(assetPrefix) && asset.name.endsWith(suffix)) {
                     url = asset.url;
                     break;
@@ -182,10 +182,7 @@ public final class UpdateChecker {
 
     private void writeCache(Cache cache) {
         try {
-            Files.createDirectories(cacheFile.toAbsolutePath().getParent());
-            Path temp = cacheFile.resolveSibling(cacheFile.getFileName() + ".tmp");
-            Files.writeString(temp, GSON.toJson(cache), StandardCharsets.UTF_8);
-            Files.move(temp, cacheFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(cacheFile, GSON.toJson(cache));
         } catch (IOException e) {
             log.warn("Could not write " + cacheFile, e);
         }

@@ -6,13 +6,14 @@ on:
   pull_request:
     branches: [ main ]
   release:
-    types: [ published ]
+    # published: attach the jars (releases and pre-releases).
+    # released: upload to the marketplace (a release, or a pre-release promoted to one).
+    types: [ published, released ]
   workflow_dispatch:
 
+# The build runs third-party Gradle plugins, so it only reads; the jobs that publish get their own rights.
 permissions:
-  contents: write
-  # GitHub's identity token for trusted publishing to the LiquidBounce marketplace.
-  id-token: write
+  contents: read
 
 jobs:
   build:
@@ -43,15 +44,30 @@ jobs:
           name: jars
           path: build/libs/*.jar
 
+  snapshot:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Two quick pushes must not race on deleting and recreating the snapshot.
+    concurrency:
+      group: snapshot
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: jars
+          path: jars
       - name: Publish snapshot release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
-          mapfile -t JARS < <(find build/libs -maxdepth 1 -name '*.jar' | sort)
-          [ "${#JARS[@]}" -gt 0 ] || { echo "[ERROR] no jar in build/libs" >&2; exit 1; }
+          mapfile -t JARS < <(find jars -maxdepth 1 -name '*.jar' | sort)
+          [ "${#JARS[@]}" -gt 0 ] || { echo "[ERROR] no jar in the artifact" >&2; exit 1; }
 
           NOTES="Automatic build of \`${GITHUB_SHA::7}\` from \`main\`.
 
@@ -66,23 +82,46 @@ jobs:
             --prerelease \
             --target "$GITHUB_SHA"
 
+  release-assets:
+    needs: build
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: jars
+          path: jars
       - name: Attach jars to release
-        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
           set -euo pipefail
 
           # The tag names the version the add-on jar was built as, e.g. v1.0.0+26.3
-          TAG="${{ github.event.release.tag_name }}"
-          ADDON="build/libs/uuid-quest-addon-${TAG#v}.jar"
+          ADDON="jars/uuid-quest-addon-${TAG#v}.jar"
           [ -f "$ADDON" ] || { echo "[ERROR] no $ADDON, check mod_version and minecraft against the tag $TAG" >&2; exit 1; }
 
-          mapfile -t JARS < <(find build/libs -maxdepth 1 -name '*.jar' | sort)
+          mapfile -t JARS < <(find jars -maxdepth 1 -name '*.jar' | sort)
           gh release upload "$TAG" "${JARS[@]}" --clobber
 
+  marketplace:
+    needs: build
+    if: github.event_name == 'release' && github.event.action == 'released' && vars.MARKETPLACE_ITEM_ID != ''
+    runs-on: ubuntu-latest
+    # Only this job can ask GitHub for the identity token the marketplace trusts.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: jars
+          path: jars
       - name: Publish to the marketplace
-        if: github.event_name == 'release' && !github.event.release.prerelease && vars.MARKETPLACE_ITEM_ID != ''
         env:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           ITEM_ID: ${{ vars.MARKETPLACE_ITEM_ID }}
@@ -91,10 +130,9 @@ jobs:
           SOURCE_RELEASE_URL: ${{ github.event.release.html_url }}
         run: |
           set -euo pipefail
-          SOURCE_COMMIT=$(git rev-parse HEAD)
           # Only the LiquidBounce add-on goes to the marketplace, not the standalone Fabric jars.
-          JAR=$(find build/libs -maxdepth 1 -name 'uuid-quest-addon-*.jar' | head -n1)
-          [ -n "$JAR" ] || { echo "[ERROR] no add-on jar in build/libs" >&2; exit 1; }
+          JAR="jars/uuid-quest-addon-${VERSION#v}.jar"
+          [ -f "$JAR" ] || { echo "[ERROR] no $JAR, check mod_version and minecraft against the tag $VERSION" >&2; exit 1; }
           # The client unpacks a revision and expects exactly one jar at its root.
           zip -j addon.zip "$JAR"
           # Trusted publishing: item 894 accepts GitHub's identity token from this repository's tag runs of
@@ -114,7 +152,7 @@ jobs:
             --form-string "changelog=$CHANGELOG" \
             --form-string "sourceRepository=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
             --form-string "sourceRef=$GITHUB_REF" \
-            --form-string "sourceCommit=$SOURCE_COMMIT" \
+            --form-string "sourceCommit=$GITHUB_SHA" \
             --form-string "sourceReleaseTag=$VERSION" \
             --form-string "sourceReleaseUrl=$SOURCE_RELEASE_URL" \
             --form-string "sourceBuildUrl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"

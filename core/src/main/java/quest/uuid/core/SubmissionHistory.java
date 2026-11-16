@@ -34,10 +34,7 @@ public final class SubmissionHistory {
         this.log = log;
         if (Files.isRegularFile(file)) {
             try {
-                List<Submission> loaded = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), LIST_TYPE);
-                if (loaded != null) {
-                    loaded.stream().filter(Objects::nonNull).filter(Submission::isComplete).forEach(submissions::add);
-                }
+                submissions.addAll(read());
             } catch (Exception e) {
                 Path backup = file.resolveSibling(file.getFileName() + ".bak");
                 try {
@@ -76,12 +73,35 @@ public final class SubmissionHistory {
     }
 
     /** Writes a temporary file and moves it over the old one, so a crash mid-write keeps the previous file. */
+    /** The usable entries in the file; throws if it cannot be read or parsed. */
+    private List<Submission> read() throws IOException {
+        List<Submission> loaded = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), LIST_TYPE);
+        var usable = new ArrayList<Submission>();
+        if (loaded != null) loaded.stream().filter(Objects::nonNull).filter(Submission::isComplete).forEach(usable::add);
+        return usable;
+    }
+
+    /**
+     * Writes the newest {@link #MAX_KEPT} of this instance's submissions together with any another game instance
+     * sharing the folder has written, so neither overwrites the other's.
+     */
     public synchronized void save() {
+        var merged = new ArrayList<>(submissions);
+        if (Files.isRegularFile(file)) {
+            try {
+                var known = new java.util.HashSet<String>();
+                submissions.forEach(submission -> known.add(submission.submitId()));
+                for (Submission other : read()) {
+                    if (known.add(other.submitId())) merged.add(other);
+                }
+            } catch (Exception e) {
+                // An unreadable file is simply replaced by this instance's submissions.
+            }
+        }
+        merged.sort(java.util.Comparator.comparingLong(Submission::createdAt));
+        List<Submission> kept = merged.subList(Math.max(0, merged.size() - MAX_KEPT), merged.size());
         try {
-            Files.createDirectories(file.toAbsolutePath().getParent());
-            Path temp = file.resolveSibling(file.getFileName() + ".tmp");
-            Files.writeString(temp, GSON.toJson(submissions, LIST_TYPE), StandardCharsets.UTF_8);
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(file, GSON.toJson(kept, LIST_TYPE));
         } catch (IOException e) {
             log.warn("Could not write " + file, e);
         }

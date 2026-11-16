@@ -152,8 +152,10 @@ public final class UuidQuest {
     /** Account the current key credits, as last confirmed by uuid.quest; null when anonymous or not known yet. */
     private volatile String creditedTo;
 
-    private void onAttribution(boolean attributed, String name) {
-        reportKey(settings.apiKey().trim(), attributed, name, false);
+    private void onAttribution(String keySent, boolean attributed, String name) {
+        // A reply for a key the user has replaced since must not be filed under the new key.
+        if (!keySent.equals(settings.apiKey().trim())) return;
+        reportKey(keySent, attributed, name, false);
     }
 
     /** {@code afterSetting}: the result of checking a key the user just set, the only time an accepted key shows in chat. */

@@ -141,10 +141,7 @@ public final class StoredSettings implements Settings {
     /** Writes a temporary file and moves it over the old one, so a crash mid-write keeps the previous file. */
     public synchronized void save() {
         try {
-            Files.createDirectories(file.toAbsolutePath().getParent());
-            Path temp = file.resolveSibling(file.getFileName() + ".tmp");
-            Files.writeString(temp, GSON.toJson(values), StandardCharsets.UTF_8);
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            AtomicFiles.write(file, GSON.toJson(values));
         } catch (IOException e) {
             log.warn("Could not write " + file, e);
         }

@@ -18,6 +18,7 @@ public final class UuidQuestClient implements ClientModInitializer {
 
     private static UuidQuestClient instance;
 
+    private Slf4jLog log;
     private StoredSettings settings;
     private UuidQuest quest;
     private int ticks;
@@ -26,7 +27,7 @@ public final class UuidQuestClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = this;
-        var log = new Slf4jLog();
+        log = new Slf4jLog();
         Path config = FabricLoader.getInstance().getConfigDir();
         String version = FabricLoader.getInstance().getModContainer(MOD_ID)
             .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
@@ -84,7 +85,14 @@ public final class UuidQuestClient implements ClientModInitializer {
             openConfig = false;
             Compat.setScreen(client, configScreen(null));
         }
-        if (++ticks % 20 == 0) quest.update();
+        if (++ticks % 20 == 0) {
+            // A bug or a damaged file must not crash the game or stop the mod for the session.
+            try {
+                quest.update();
+            } catch (RuntimeException e) {
+                log.error("uuid.quest update failed", e);
+            }
+        }
     }
 
 }

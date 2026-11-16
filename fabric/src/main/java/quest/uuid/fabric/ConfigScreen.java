@@ -43,6 +43,8 @@ final class ConfigScreen extends Screen {
         boolean verbose;
         boolean updateCheck;
         String apiKey;
+        /** What was typed into the key field; empty keeps {@link #apiKey}. */
+        String typedApiKey = "";
 
         Draft(Settings from) {
             enabled = from.enabled();
@@ -66,7 +68,7 @@ final class ConfigScreen extends Screen {
         @Override public AnnounceMode announce() { return announce; }
         @Override public boolean verbose() { return verbose; }
         @Override public boolean updateCheck() { return updateCheck; }
-        @Override public String apiKey() { return apiKey; }
+        @Override public String apiKey() { return typedApiKey.isBlank() ? apiKey : typedApiKey.trim(); }
     }
 
     ConfigScreen(Screen parent, UuidQuestClient mod) {
@@ -127,8 +129,11 @@ final class ConfigScreen extends Screen {
         y += 12;
         var apiKey = new EditBox(font, left, y, full, 20, Component.literal("API key"));
         apiKey.setMaxLength(200);
-        apiKey.setValue(draft.apiKey);
-        apiKey.setResponder(value -> draft.apiKey = value);
+        // The saved key never appears on screen (streams): the field starts empty, typing replaces the key,
+        // and /uuidquest set apikey without a value clears it.
+        apiKey.setHint(Component.literal(draft.apiKey.isBlank() ? "uqk_..."
+            : "Saved key " + Settings.maskApiKey(draft.apiKey) + ", type a new one to replace it"));
+        apiKey.setResponder(value -> draft.typedApiKey = value);
         addRenderableWidget(apiKey);
         y += ROW + 8;
 

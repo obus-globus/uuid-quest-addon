@@ -17,7 +17,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
@@ -101,11 +100,15 @@ public final class Submitter {
         this.onAbuseThrottled = onAbuseThrottled;
     }
 
-    /** Called after a submission that carried an API key: whether uuid.quest accepted it, and the account name. */
-    private volatile BiConsumer<Boolean, String> onAttribution = (attributed, name) -> {
+    /** Called after a submission that carried an API key, with the key that was sent. */
+    public interface AttributionListener {
+        void onAttribution(String key, boolean attributed, String name);
+    }
+
+    private volatile AttributionListener onAttribution = (key, attributed, name) -> {
     };
 
-    public void setOnAttribution(BiConsumer<Boolean, String> onAttribution) {
+    public void setOnAttribution(AttributionListener onAttribution) {
         this.onAttribution = onAttribution;
     }
 
@@ -169,7 +172,7 @@ public final class Submitter {
             Transport.Request request = submitRequest(batch, note, REQUEST_TIMEOUT);
             transport.sendAsync(request).whenComplete((response, error) -> {
                 try {
-                    handle(batch, note, request.bearer() != null, response, error, report);
+                    handle(batch, note, request.bearer(), response, error, report);
                 } catch (Exception e) {
                     log.error("Handling the uuid.quest response failed", e);
                 } finally {
@@ -211,7 +214,7 @@ public final class Submitter {
             try {
                 Duration remaining = Duration.ofNanos(deadline - System.nanoTime());
                 Transport.Request request = submitRequest(batch, note, remaining);
-                handle(batch, note, request.bearer() != null, transport.send(request), null, text -> {
+                handle(batch, note, request.bearer(), transport.send(request), null, text -> {
                 });
             } catch (Exception e) {
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
@@ -268,7 +271,8 @@ public final class Submitter {
         return cleaned.isEmpty() ? null : cleaned;
     }
 
-    private void handle(List<UUID> batch, String note, boolean keySent, Transport.Response response,
+    /** {@code keySent} is the API key the request carried, null when it went in anonymously. */
+    private void handle(List<UUID> batch, String note, String keySent, Transport.Response response,
                         Throwable error, Consumer<QuestText> report) {
         if (response == null) {
             retryLater(batch, RetryPolicy.DEFAULT_RETRY_SECONDS);
@@ -290,7 +294,9 @@ public final class Submitter {
                     return;
                 }
                 history.add(submission);
-                if (keySent) onAttribution.accept(submission.attributedTo() != null, submission.attributedTo());
+                if (keySent != null) {
+                    onAttribution.onAttribution(keySent, submission.attributedTo() != null, submission.attributedTo());
+                }
                 if (submission.warning() != null) onWarning.accept(submission.warning());
                 log.info("uuid.quest accepted submission " + submission.submitId() + ": "
                     + submission.count("queued") + " queued, " + submission.count("cracked") + " cracked, "
@@ -366,9 +372,9 @@ public final class Submitter {
         if (submission == null || !polling.compareAndSet(false, true)) return;
         submission.setLastPolled(now);
 
-        var request = new Transport.Request(URI.create(API + "/submissions/" + submission.submitId()), null,
-            REQUEST_TIMEOUT, userAgent);
         try {
+            var request = new Transport.Request(URI.create(API + "/submissions/" + submission.submitId()), null,
+                REQUEST_TIMEOUT, userAgent);
             transport.sendAsync(request).whenComplete((response, error) -> {
                 try {
                     handlePoll(submission, response, error, onFinished);
@@ -380,6 +386,7 @@ public final class Submitter {
             });
         } catch (RuntimeException e) {
             polling.set(false);
+            pollNotBefore = clock.getAsLong() + RetryPolicy.DEFAULT_RETRY_SECONDS * 1000L;
             log.warn("uuid.quest status poll of " + submission.submitId() + " failed", e);
         }
     }
@@ -397,9 +404,9 @@ public final class Submitter {
         } else if (status == 404) {
             submission.setState(Submission.STATE_EXPIRED);
         } else {
-            if (status == 429 || status >= 500) {
-                pollNotBefore = clock.getAsLong() + RetryPolicy.retryAfterSeconds(response) * 1000L;
-            }
+            // Any failed poll waits (Retry-After when given), so several unfinished submissions cannot poll every second.
+            long seconds = response == null ? RetryPolicy.DEFAULT_RETRY_SECONDS : RetryPolicy.retryAfterSeconds(response);
+            pollNotBefore = clock.getAsLong() + seconds * 1000L;
             log.warn("uuid.quest status poll of " + submission.submitId() + " failed ("
                 + (response == null ? "null" : status) + ")", error);
         }

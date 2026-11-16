@@ -353,4 +353,36 @@ class UuidQuestTest {
         assertTrue(quest.totals().plain().contains("Credited to scorpion."));
     }
 
+    @Test
+    void lateReplyForAReplacedKeyIsIgnored() {
+        var settings = settings();
+        settings.setApiKey("uqk_old");
+        var pending = new java.util.concurrent.CompletableFuture<Transport.Response>();
+        var sent = new ArrayList<Transport.Request>();
+        Transport deferred = new Transport() {
+            @Override
+            public java.util.concurrent.CompletableFuture<Response> sendAsync(Request request) {
+                sent.add(request);
+                return pending;
+            }
+
+            @Override
+            public Response send(Request request) {
+                throw new UnsupportedOperationException();
+            }
+        };
+        var quest = new UuidQuest(platform, settings, log, new SubmissionHistory(dir.resolve("submissions.json"), log),
+            deferred, clock, "uuid-quest/test");
+        platform.listed.put(TestSupport.v4(), "Alice");
+        quest.update();
+        quest.onDisabled();
+        assertEquals("uqk_old", sent.get(0).bearer());
+
+        settings.setApiKey("uqk_new");
+        pending.complete(new Transport.Response(202, java.util.Optional.of("application/json"), java.util.Optional.empty(),
+            "{\"submitId\":\"s1\",\"state\":\"queued\",\"counts\":{\"received\":1,\"queued\":1},\"attributed\":false}"));
+        quest.update();
+        assertTrue(platform.chat.isEmpty());
+    }
+
 }

@@ -309,7 +309,7 @@ class SubmitterTest {
     @Test
     void reportsWhetherTheApiKeyWasAccepted() {
         var outcomes = new ArrayList<String>();
-        submitter.setOnAttribution((attributed, name) -> outcomes.add(attributed + " " + name));
+        submitter.setOnAttribution((key, attributed, name) -> outcomes.add(attributed + " " + name));
         submitter.setApiKey(() -> "uqk_key");
 
         submitter.offer(TestSupport.v4(), "a.example");
@@ -327,7 +327,7 @@ class SubmitterTest {
     @Test
     void noAttributionCallbackWithoutAKey() {
         var outcomes = new ArrayList<String>();
-        submitter.setOnAttribution((attributed, name) -> outcomes.add(attributed + " " + name));
+        submitter.setOnAttribution((key, attributed, name) -> outcomes.add(attributed + " " + name));
         submitter.offer(TestSupport.v4(), "a.example");
         transport.respond(202, "application/json", null, acceptedBody(false, null));
         submitter.flush("", reports::add);
@@ -345,6 +345,27 @@ class SubmitterTest {
         submitter.flush("", reports::add);
         assertEquals(2, body(1).getAsJsonArray("uuids").size());
         assertEquals(2, submitter.pendingCount());
+    }
+
+    @Test
+    void failedPollWaitsBeforeTheNextOne() {
+        submitter.offer(TestSupport.v4(), "a.example");
+        transport.accepted("s1", 1);
+        submitter.flush("", reports::add);
+
+        clock.advanceSeconds(31);
+        transport.respond(403, "text/html", null, "<html>cloudflare</html>");
+        submitter.pollUnfinished(submission -> { });
+        int afterFailure = transport.requests.size();
+
+        clock.advanceSeconds(31);
+        submitter.pollUnfinished(submission -> { });
+        assertEquals(afterFailure, transport.requests.size());
+
+        clock.advanceSeconds(30);
+        transport.respond(200, "application/json", null, "{\"state\":\"done\",\"counts\":{\"received\":1}}");
+        submitter.pollUnfinished(submission -> { });
+        assertEquals(afterFailure + 1, transport.requests.size());
     }
 
 }

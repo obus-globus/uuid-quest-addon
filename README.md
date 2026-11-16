@@ -89,7 +89,10 @@ prints the current settings and `/uuidquest flush` sends the pending UUIDs now.
 `/uuidquest config` or Mod Menu's config button opens the settings screen. To change one setting from
 chat, use `/uuidquest set <name> <value>`, for example `/uuidquest set note my label`,
 `/uuidquest set announce Both`, `/uuidquest set interval 120` or `/uuidquest set enabled false`.
-Set the API key with `/uuidquest set apikey uqk_...`, and clear it with `/uuidquest set apikey`.
+Set the API key in the settings screen: it only shows the last four characters of a saved key, and
+typing a new one replaces it. `/uuidquest set apikey uqk_...` works too, but Minecraft saves every
+`/` command in plain text in `.minecraft/command_history.txt`, so prefer the screen. Clear the key with
+`/uuidquest set apikey`.
 
 Settings live in `config/uuid-quest.json` and submissions in `config/uuid-quest/submissions.json`.
 Notifications show up as vanilla toasts.

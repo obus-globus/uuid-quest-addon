@@ -110,11 +110,15 @@ of its range below 26: a Java 17 jar cannot be compiled against a Java 21 Minecr
 
 ## Releases
 
-CI (`.github/workflows/build.yml`) builds everything with JDK 17, 21 and 25 and refreshes the `snapshot`
-pre-release with all jars on every push to `main`. A published GitHub release tagged `v<mod_version>+<mc>` (the
-add-on's version, e.g. `v1.0.0+26.3`) gets all jars attached; if it is not a pre-release, the add-on jar alone
-is uploaded to the LiquidBounce marketplace as item 894 (repo variable `MARKETPLACE_ITEM_ID`) through
-`POST https://api.liquidbounce.net/marketplace/items/{id}/revisions`. That upload authenticates with trusted
-publishing: the item trusts `obus-globus/uuid-quest-addon`, ref `refs/tags/*`, workflow `build.yml`, and the
-step sends GitHub's identity token with audience `https://api.liquidbounce.net`. An `API_TOKEN` secret, if ever set, is used instead. Renaming the workflow file or the repository
-breaks the trust until it is updated on the item's page. The Fabric jars are not published anywhere else.
+CI (`.github/workflows/build.yml`) builds everything with JDK 17, 21 and 25 in a `build` job that only has
+read rights (it runs third-party Gradle plugins); separate jobs download its `jars` artifact and publish:
+`snapshot` refreshes the `snapshot` pre-release on every push to `main`, `release-assets` attaches all jars to a
+published release or pre-release tagged `v<mod_version>+<mc>` (the add-on's version, e.g. `v1.0.0+26.3`), and
+`marketplace` runs on `released` (a release, or a pre-release promoted to one) and uploads the add-on jar alone
+to LiquidBounce marketplace item 894 (repo variable `MARKETPLACE_ITEM_ID`) through
+`POST https://api.liquidbounce.net/marketplace/items/{id}/revisions`. Only that job has `id-token: write`: the
+item trusts `obus-globus/uuid-quest-addon`, ref `refs/tags/*`, workflow `build.yml`, and the job sends GitHub's
+identity token with audience `https://api.liquidbounce.net`. An `API_TOKEN` secret, if ever set, is used
+instead. Renaming the workflow file or the repository breaks the trust until it is updated on the item's page.
+A normal release fires both `published` and `released`, so it builds twice. The Fabric jars are not published
+anywhere else.

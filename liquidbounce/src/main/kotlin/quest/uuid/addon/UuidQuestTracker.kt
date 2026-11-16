@@ -10,7 +10,10 @@ object UuidQuestTracker : EventListener {
     override fun parent() = addon
 
     init {
-        every(20) { UuidQuestAddon.quest?.update() }
+        // An exception would end the every() loop for the rest of the session, so it is logged instead.
+        every(20) {
+            runCatching { UuidQuestAddon.quest?.update() }.onFailure { AddonLog.error("uuid.quest update failed", it) }
+        }
     }
 
 }

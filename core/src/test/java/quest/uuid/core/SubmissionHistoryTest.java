@@ -95,4 +95,26 @@ class SubmissionHistoryTest {
         assertEquals("id5", history.recent(SubmissionHistory.MAX_KEPT).get(SubmissionHistory.MAX_KEPT - 1).submitId());
     }
 
+    @Test
+    void twoInstancesSharingTheFolderKeepEachOthersSubmissions() {
+        var log = new TestSupport.RecordingLog();
+        Path file = dir.resolve("submissions.json");
+        var first = new SubmissionHistory(file, log);
+        var second = new SubmissionHistory(file, log);
+        first.add(new Submission("aaa", 1, 1, null, "queued", java.util.Map.of(), List.of()));
+        second.add(new Submission("bbb", 2, 1, null, "queued", java.util.Map.of(), List.of()));
+
+        var reloaded = new SubmissionHistory(file, log);
+        assertEquals(List.of("bbb", "aaa"), reloaded.recent(10).stream().map(Submission::submitId).toList());
+    }
+
+    @Test
+    void entriesWithAnUnusableIdAreDropped() throws Exception {
+        Path file = dir.resolve("submissions.json");
+        java.nio.file.Files.writeString(file, "[{\"submitId\":\"../../x y\",\"state\":\"queued\",\"counts\":{}},"
+            + "{\"submitId\":\"ok-1\",\"state\":\"queued\",\"counts\":{}}]");
+        var history = new SubmissionHistory(file, new TestSupport.RecordingLog());
+        assertEquals(List.of("ok-1"), history.recent(10).stream().map(Submission::submitId).toList());
+    }
+
 }

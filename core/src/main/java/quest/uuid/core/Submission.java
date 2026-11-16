@@ -114,9 +114,14 @@ public final class Submission {
         return value == null ? 0 : value;
     }
 
-    /** Gson skips the constructor, so an entry missing a field comes back with nulls. */
+    private static final java.util.regex.Pattern SUBMIT_ID = java.util.regex.Pattern.compile("[0-9A-Za-z-]{1,64}");
+
+    /**
+     * Gson skips the constructor, so an entry missing a field comes back with nulls; an id that is not a plain
+     * token (it goes into the status URL) marks a damaged entry too.
+     */
     boolean isComplete() {
-        return submitId != null && state != null && counts != null;
+        return submitId != null && SUBMIT_ID.matcher(submitId).matches() && state != null && counts != null;
     }
 
     /** Parses everything before assigning, so a malformed status cannot leave the submission half updated. */
