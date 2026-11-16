@@ -256,4 +256,40 @@ class UuidQuestTest {
         assertTrue(transport.requests.isEmpty());
     }
 
+    @Test
+    void showsUuidQuestsWarningOnAccept() {
+        var settings = settings();
+        settings.setAnnounce(AnnounceMode.OFF);
+        var quest = quest(settings);
+        platform.listed.put(TestSupport.v4(), "Alice");
+        quest.update();
+        transport.respond(202, "application/json", null,
+            "{\"submitId\":\"s1\",\"state\":\"queued\",\"counts\":{\"received\":1,\"queued\":1},"
+                + "\"attributed\":false,\"warning\":\"Most UUIDs were invalid.\"}");
+        quest.onDisabled();
+        quest.update();
+        assertEquals(List.of("uuid.quest: Most UUIDs were invalid."), platform.chat);
+        assertTrue(platform.notifications.get(0).startsWith("ERROR "));
+    }
+
+    @Test
+    void guardWarningReplacesUuidQuestsOwnAfterTheCheck() {
+        var settings = settings();
+        settings.setAnnounce(AnnounceMode.OFF);
+        var quest = quest(settings);
+        for (int i = 0; i < 20; i++) platform.listed.put(TestSupport.v4(), "Npc" + i);
+        quest.update();
+        transport.accepted("s1", 20);
+        quest.onDisabled();
+
+        clock.advanceSeconds(30);
+        transport.respond(200, "application/json", null,
+            "{\"state\":\"done\",\"earlyExited\":true,\"warning\":\"Mostly fake.\","
+                + "\"counts\":{\"received\":20,\"checked\":20,\"fake\":18}}");
+        quest.update();
+        assertEquals(List.of("Most UUIDs from a.example were fake (NPCs?), not collecting there until restart"),
+            platform.chat);
+        assertEquals("Mostly fake.", quest.history().recent(1).get(0).warning());
+    }
+
 }

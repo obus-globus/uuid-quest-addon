@@ -31,6 +31,8 @@ public final class Submission {
     private List<String> servers;
     /** Account name uuid.quest credited the submission to, null when it was anonymous. */
     private String attributedTo;
+    /** uuid.quest's notice when the submission was flagged (mostly invalid or fake UUIDs), else null. */
+    private volatile String warning;
 
     @SuppressWarnings("unused") // Gson
     private Submission() {
@@ -91,6 +93,14 @@ public final class Submission {
         return attributedTo;
     }
 
+    public String warning() {
+        return warning;
+    }
+
+    void setWarning(String warning) {
+        this.warning = warning;
+    }
+
     void setAttributedTo(String attributedTo) {
         this.attributedTo = attributedTo;
     }
@@ -115,9 +125,16 @@ public final class Submission {
         Map<String, Integer> newCounts = parseCounts(status.getAsJsonObject("counts"));
         JsonElement early = status.get("earlyExited");
         boolean newEarlyExited = early != null && !early.isJsonNull() && early.getAsBoolean();
+        String newWarning = text(status, "warning");
         counts = newCounts;
         earlyExited = newEarlyExited;
+        if (newWarning != null) warning = newWarning;
         state = newState;
+    }
+
+    static String text(JsonObject json, String field) {
+        JsonElement value = json.get(field);
+        return value == null || value.isJsonNull() || value.getAsString().isBlank() ? null : value.getAsString();
     }
 
     static Map<String, Integer> parseCounts(JsonObject counts) {

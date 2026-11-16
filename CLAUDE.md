@@ -95,6 +95,9 @@ of its range below 26: a Java 17 jar cannot be compiled against a Java 21 Minecr
 - `PremiumUuid.isPremium` is the only filter. Keep it strict: uuid.quest early-exits a submission and
   tightens the submitter's rate budget once most of its UUIDs turn out fake (NPCs with v4 UUIDs are the
   risk), and the budget is per IP.
+- uuid.quest flags a mostly invalid or fake submission with a `warning` text (202 on accept, or the status
+  after an early exit). `UuidQuest` shows it as a warning, except after the check when the guard below has
+  already warned about the same submission.
 - `ServerGuard` is the safety net behind that filter: a finished submission that early-exited, or with at
   least 10 checked and half of them fake, blocks the servers its UUIDs came from (stored per submission
   as `servers`) for the session. Keep its thresholds stricter than uuid.quest's

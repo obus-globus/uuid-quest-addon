@@ -60,6 +60,7 @@ public final class UuidQuest {
         this.submitter = new Submitter(transport, history, guard, log, clock, userAgent);
         submitter.setApiKey(settings::apiKey);
         submitter.setOnAttribution(this::onAttribution);
+        submitter.setOnWarning(warning -> warn("uuid.quest: " + warning));
         submitter.setOnAbuseThrottled(seconds ->
             warn("uuid.quest is blocking this network for " + seconds / 60 + " min after too many fake UUIDs"));
     }
@@ -119,10 +120,16 @@ public final class UuidQuest {
     }
 
     private void onFinished(Submission submission) {
+        boolean warned = false;
         if (ServerGuard.isSuspicious(submission)) {
             for (String server : guard.block(submission.servers())) {
                 warn("Most UUIDs from " + server + " were fake (NPCs?), not collecting there until restart");
+                warned = true;
             }
+        }
+        // uuid.quest's own notice after the Mojang check, unless the guard already warned about the same thing.
+        if (!warned && submission.earlyExited() && submission.warning() != null) {
+            warn("uuid.quest: " + submission.warning());
         }
 
         int found = submission.count("forwarded");

@@ -18,8 +18,8 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
   `Retry-After` says.
 - If uuid.quest finds most UUIDs from a server fake (usually NPCs with random UUIDs), it stops
   collecting on that server until you restart the game and warns you in chat and with a notification.
-  It backs off well before uuid.quest would penalise your network, and it also warns you if uuid.quest
-  does throttle the network for abuse.
+  It backs off well before uuid.quest would penalise your network. It also passes on uuid.quest's own
+  warning when a submission gets flagged, and warns you if uuid.quest does throttle the network for abuse.
 - Keeps the last 100 submissions with their result and keeps checking unfinished ones, including after
   a restart. You can attach a `Note` to each submission.
 - Tells you when a submission contained UUIDs uuid.quest didn't have yet, in chat, as a notification,

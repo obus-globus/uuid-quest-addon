@@ -109,6 +109,14 @@ public final class Submitter {
         this.onAttribution = onAttribution;
     }
 
+    /** Called with uuid.quest's notice when it flags a submission on accept. */
+    private volatile Consumer<String> onWarning = warning -> {
+    };
+
+    public void setOnWarning(Consumer<String> onWarning) {
+        this.onWarning = onWarning;
+    }
+
     /** Lowered after a 413, in case uuid.quest's limits are ever below {@link #MAX_BATCH}. */
     private volatile int maxBatch = MAX_BATCH;
 
@@ -283,6 +291,7 @@ public final class Submitter {
                 }
                 history.add(submission);
                 if (keySent) onAttribution.accept(submission.attributedTo() != null, submission.attributedTo());
+                if (submission.warning() != null) onWarning.accept(submission.warning());
                 log.info("uuid.quest accepted submission " + submission.submitId() + ": "
                     + submission.count("queued") + " queued, " + submission.count("cracked") + " cracked, "
                     + submission.count("duplicate") + " duplicate");
@@ -330,6 +339,7 @@ public final class Submitter {
             Submission.parseCounts(json.getAsJsonObject("counts")),
             servers
         );
+        submission.setWarning(Submission.text(json, "warning"));
         boolean attributed = json.has("attributed") && json.get("attributed").getAsBoolean();
         if (attributed) {
             submission.setAttributedTo(json.has("attributedTo") ? json.get("attributedTo").getAsString() : "your account");
