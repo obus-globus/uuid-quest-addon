@@ -41,8 +41,9 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
 - `UpdateCheck`: look for a newer release on GitHub (on by default).
 - `ApiKey`: optional uuid.quest API key (`uqk_...`, created on your uuid.quest account page). With a key,
   your submissions count for your account on the leaderboard and use your account's rate limits instead
-  of the per-IP ones. uuid.quest treats an unknown key as anonymous, so a wrong key does not show an
-  error. Settings listings only show the last four characters.
+  of the per-IP ones. After the first submission with a key you get a chat line naming the account it
+  is credited to, or a warning if uuid.quest did not accept the key (the submission then goes in
+  anonymously). Settings listings only show the last four characters.
 
 ## LiquidBounce add-on
 

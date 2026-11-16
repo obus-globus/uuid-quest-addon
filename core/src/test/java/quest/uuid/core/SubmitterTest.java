@@ -301,4 +301,50 @@ class SubmitterTest {
         assertEquals("set", Settings.maskApiKey("uqk_ab"));
     }
 
+    private static String acceptedBody(boolean attributed, String name) {
+        return "{\"submitId\":\"s1\",\"state\":\"queued\",\"counts\":{\"received\":1,\"queued\":1},"
+            + "\"attributed\":" + attributed + (name == null ? "" : ",\"attributedTo\":\"" + name + "\"") + "}";
+    }
+
+    @Test
+    void reportsWhetherTheApiKeyWasAccepted() {
+        var outcomes = new ArrayList<String>();
+        submitter.setOnAttribution((attributed, name) -> outcomes.add(attributed + " " + name));
+        submitter.setApiKey(() -> "uqk_key");
+
+        submitter.offer(TestSupport.v4(), "a.example");
+        transport.respond(202, "application/json", null, acceptedBody(true, "scorpion"));
+        submitter.flush("", reports::add);
+        assertEquals(List.of("true scorpion"), outcomes);
+        assertEquals("scorpion", history.recent(1).get(0).attributedTo());
+
+        submitter.offer(TestSupport.v4(), "a.example");
+        transport.respond(202, "application/json", null, acceptedBody(false, null));
+        submitter.flush("", reports::add);
+        assertEquals(List.of("true scorpion", "false null"), outcomes);
+    }
+
+    @Test
+    void noAttributionCallbackWithoutAKey() {
+        var outcomes = new ArrayList<String>();
+        submitter.setOnAttribution((attributed, name) -> outcomes.add(attributed + " " + name));
+        submitter.offer(TestSupport.v4(), "a.example");
+        transport.respond(202, "application/json", null, acceptedBody(false, null));
+        submitter.flush("", reports::add);
+        assertTrue(outcomes.isEmpty());
+    }
+
+    @Test
+    void tooLargeBatchIsSplit() {
+        for (int i = 0; i < 4; i++) submitter.offer(TestSupport.v4(), "a.example");
+        transport.respond(413, "application/problem+json", null, "{\"type\":\"https://uuid.quest/problems/too-large\"}");
+        submitter.flush("", reports::add);
+        assertEquals(4, submitter.pendingCount());
+
+        transport.accepted("s1", 2);
+        submitter.flush("", reports::add);
+        assertEquals(2, body(1).getAsJsonArray("uuids").size());
+        assertEquals(2, submitter.pendingCount());
+    }
+
 }

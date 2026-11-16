@@ -54,6 +54,7 @@ public final class UuidQuest {
         this.userAgent = userAgent;
         this.submitter = new Submitter(transport, history, guard, log, clock, userAgent);
         submitter.setApiKey(settings::apiKey);
+        submitter.setOnAttribution(this::onAttribution);
         submitter.setOnAbuseThrottled(seconds ->
             warn("uuid.quest is blocking this network for " + seconds / 60 + " min after too many fake UUIDs"));
     }
@@ -131,6 +132,21 @@ public final class UuidQuest {
         verboseReport(submission.summaryText());
     }
 
+    /** The key and outcome last told to the user, so each key is confirmed or rejected only once. */
+    private volatile String lastAttribution;
+
+    private void onAttribution(boolean attributed, String name) {
+        String outcome = settings.apiKey().trim() + (attributed ? "|ok" : "|rejected");
+        if (outcome.equals(lastAttribution)) return;
+        lastAttribution = outcome;
+        if (attributed) {
+            log.info("uuid.quest credits submissions to " + name);
+            announcer.announce(QuestText.of("uuid.quest credits your submissions to " + name), EnumSet.of(AnnounceTarget.CHAT));
+        } else {
+            warn("uuid.quest did not accept your API key, so your submissions are anonymous. Check the ApiKey setting.");
+        }
+    }
+
     private void onUpdateAvailable(UpdateChecker.Update update) {
         log.info("uuid.quest " + update.version() + " is available: " + update.url());
         var message = QuestText.builder()
@@ -177,6 +193,7 @@ public final class UuidQuest {
         for (Submission submission : history.recent(10)) {
             var details = new StringBuilder(" " + submission.sent() + " sent, " + submission.state());
             if (submission.finished()) details.append(", ").append(submission.summaryCounts());
+            if (submission.attributedTo() != null) details.append(" | credited to ").append(submission.attributedTo());
             if (submission.note() != null) details.append(" | ").append(submission.note());
             lines.add(QuestText.builder()
                 .text(TIME.format(Instant.ofEpochMilli(submission.createdAt())) + " ")

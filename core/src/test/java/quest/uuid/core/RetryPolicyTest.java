@@ -35,7 +35,7 @@ class RetryPolicyTest {
     @Test
     void dropsBadRequestsWithProblemJson() {
         assertEquals(REJECTED, RetryPolicy.decide(response(400, PROBLEM, null, "{}")));
-        assertEquals(REJECTED, RetryPolicy.decide(response(413, "application/json", null, "{}")));
+        assertEquals(RetryPolicy.Decision.SPLIT, RetryPolicy.decide(response(413, "application/json", null, "{}")));
     }
 
     @Test

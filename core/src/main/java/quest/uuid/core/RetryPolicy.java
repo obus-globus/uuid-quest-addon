@@ -12,6 +12,8 @@ public final class RetryPolicy {
         ACCEPTED,
         /** Queue the batch again and wait (Retry-After, or {@link #DEFAULT_RETRY_SECONDS}). */
         RETRY,
+        /** The batch was too large (413); send it again in smaller batches. */
+        SPLIT,
         /** The request itself is bad; drop the batch. */
         REJECTED,
     }
@@ -27,6 +29,7 @@ public final class RetryPolicy {
     public static Decision decide(Transport.Response response) {
         int status = response.status();
         if (status == 202) return Decision.ACCEPTED;
+        if (status == 413) return Decision.SPLIT;
         if (status >= 500 || RETRYABLE_CLIENT_ERRORS.contains(status)
             || (status >= 400 && status <= 499 && !isProblemJson(response))) {
             return Decision.RETRY;

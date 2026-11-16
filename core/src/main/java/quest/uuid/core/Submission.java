@@ -29,6 +29,8 @@ public final class Submission {
     private volatile long lastPolled;
     /** Addresses of the servers the UUIDs were seen on; null in entries saved before this was tracked. */
     private List<String> servers;
+    /** Account name uuid.quest credited the submission to, null when it was anonymous. */
+    private String attributedTo;
 
     @SuppressWarnings("unused") // Gson
     private Submission() {
@@ -83,6 +85,14 @@ public final class Submission {
 
     public List<String> servers() {
         return servers == null ? List.of() : servers;
+    }
+
+    public String attributedTo() {
+        return attributedTo;
+    }
+
+    void setAttributedTo(String attributedTo) {
+        this.attributedTo = attributedTo;
     }
 
     public boolean finished() {

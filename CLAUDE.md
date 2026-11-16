@@ -19,7 +19,9 @@ User-facing behaviour and install per version are in [README.md](README.md).
   `+<range>.jar` (else the release page); platforms turn it on with `UuidQuest.enableUpdateCheck`. Core's
   classes are copied into each jar (`bundled` configuration), not nested. The optional `apiKey` setting
   goes out as `Authorization: Bearer` on submissions only (`Submitter.submitRequest`), never on polls or to
-  GitHub; uuid.quest silently treats an unknown key as anonymous. Listings show it via `Settings.maskApiKey`.
+  GitHub. uuid.quest still accepts a submission with an unknown key, anonymously, and says so in the 202's
+  `attributed`/`attributedTo`; `UuidQuest.onAttribution` confirms or warns once per key. Listings show the key
+  via `Settings.maskApiKey`. A 413 halves the batch size for the session (`RetryPolicy.Decision.SPLIT`).
 - `liquidbounce/`: the add-on (Kotlin). Built from [`../lb-addon-workspace`](../lb-addon-workspace)
   (CCBlueX's template); its CLAUDE.md covers the add-on build setup and traps (no `mappings` line, plain
   `implementation`). Not a module on purpose: `UuidQuestTracker` is a plain `EventListener` whose tick

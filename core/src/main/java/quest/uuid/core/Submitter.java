@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
@@ -100,6 +101,17 @@ public final class Submitter {
         this.onAbuseThrottled = onAbuseThrottled;
     }
 
+    /** Called after a submission that carried an API key: whether uuid.quest accepted it, and the account name. */
+    private volatile BiConsumer<Boolean, String> onAttribution = (attributed, name) -> {
+    };
+
+    public void setOnAttribution(BiConsumer<Boolean, String> onAttribution) {
+        this.onAttribution = onAttribution;
+    }
+
+    /** Lowered after a 413, in case uuid.quest's limits are ever below {@link #MAX_BATCH}. */
+    private volatile int maxBatch = MAX_BATCH;
+
     public int rememberedCount() {
         return remembered.size();
     }
@@ -146,9 +158,10 @@ public final class Submitter {
         }
         log.info("Sending " + batch.size() + " UUIDs to uuid.quest (" + pending.size() + " still pending)");
         try {
-            transport.sendAsync(submitRequest(batch, note, REQUEST_TIMEOUT)).whenComplete((response, error) -> {
+            Transport.Request request = submitRequest(batch, note, REQUEST_TIMEOUT);
+            transport.sendAsync(request).whenComplete((response, error) -> {
                 try {
-                    handle(batch, note, response, error, report);
+                    handle(batch, note, request.bearer() != null, response, error, report);
                 } catch (Exception e) {
                     log.error("Handling the uuid.quest response failed", e);
                 } finally {
@@ -189,7 +202,8 @@ public final class Submitter {
             log.info("Sending " + batch.size() + " UUIDs to uuid.quest before exit");
             try {
                 Duration remaining = Duration.ofNanos(deadline - System.nanoTime());
-                handle(batch, note, transport.send(submitRequest(batch, note, remaining)), null, text -> {
+                Transport.Request request = submitRequest(batch, note, remaining);
+                handle(batch, note, request.bearer() != null, transport.send(request), null, text -> {
                 });
             } catch (Exception e) {
                 if (e instanceof InterruptedException) Thread.currentThread().interrupt();
@@ -203,10 +217,11 @@ public final class Submitter {
         if (!pending.isEmpty()) log.info(pending.size() + " UUIDs were not sent before exit");
     }
 
-    /** Takes up to {@link #MAX_BATCH} pending UUIDs, dropping those seen on a server blocked since. */
+    /** Takes up to {@link #maxBatch} pending UUIDs, dropping those seen on a server blocked since. */
     private List<UUID> drainBatch() {
-        var batch = new ArrayList<UUID>(Math.min(pending.size(), MAX_BATCH));
-        while (batch.size() < MAX_BATCH) {
+        int limit = maxBatch;
+        var batch = new ArrayList<UUID>(Math.min(pending.size(), limit));
+        while (batch.size() < limit) {
             UUID uuid = pending.poll();
             if (uuid == null) break;
             String server = origins.get(uuid);
@@ -245,8 +260,8 @@ public final class Submitter {
         return cleaned.isEmpty() ? null : cleaned;
     }
 
-    private void handle(List<UUID> batch, String note, Transport.Response response, Throwable error,
-                        Consumer<QuestText> report) {
+    private void handle(List<UUID> batch, String note, boolean keySent, Transport.Response response,
+                        Throwable error, Consumer<QuestText> report) {
         if (response == null) {
             retryLater(batch, RetryPolicy.DEFAULT_RETRY_SECONDS);
             log.warn("uuid.quest submission failed, retrying " + batch.size() + " UUIDs later", error);
@@ -267,11 +282,24 @@ public final class Submitter {
                     return;
                 }
                 history.add(submission);
+                if (keySent) onAttribution.accept(submission.attributedTo() != null, submission.attributedTo());
                 log.info("uuid.quest accepted submission " + submission.submitId() + ": "
                     + submission.count("queued") + " queued, " + submission.count("cracked") + " cracked, "
                     + submission.count("duplicate") + " duplicate");
                 report.accept(QuestText.builder().text("uuid.quest ").link(submission.submitId())
                     .text(": queued " + submission.count("queued") + " of " + batch.size() + " UUIDs").build());
+            }
+            case SPLIT -> {
+                if (batch.size() > 1) {
+                    maxBatch = Math.max(1, batch.size() / 2);
+                    pending.addAll(batch);
+                    if (pendingSince == 0L) pendingSince = clock.getAsLong();
+                    log.info("uuid.quest found " + batch.size() + " UUIDs too large, sending at most " + maxBatch
+                        + " per submission from now on");
+                } else {
+                    batch.forEach(origins::remove);
+                    log.warn("uuid.quest rejected a single UUID as too large: " + response.body());
+                }
             }
             case RETRY -> {
                 long seconds = RetryPolicy.retryAfterSeconds(response);
@@ -293,7 +321,7 @@ public final class Submitter {
 
     private Submission parseAccepted(String body, int sent, String note, List<String> servers) {
         JsonObject json = JsonParser.parseString(body).getAsJsonObject();
-        return new Submission(
+        var submission = new Submission(
             json.get("submitId").getAsString(),
             clock.getAsLong(),
             sent,
@@ -302,6 +330,11 @@ public final class Submitter {
             Submission.parseCounts(json.getAsJsonObject("counts")),
             servers
         );
+        boolean attributed = json.has("attributed") && json.get("attributed").getAsBoolean();
+        if (attributed) {
+            submission.setAttributedTo(json.has("attributedTo") ? json.get("attributedTo").getAsString() : "your account");
+        }
+        return submission;
     }
 
     private void retryLater(List<UUID> batch, long seconds) {
