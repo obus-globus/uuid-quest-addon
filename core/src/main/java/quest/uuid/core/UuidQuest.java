@@ -34,7 +34,7 @@ public final class UuidQuest {
     private final Platform platform;
     private final Settings settings;
     private final QuestLog log;
-    private final ServerGuard guard = new ServerGuard();
+    private final ServerGuard guard;
     private final Announcer announcer = new Announcer();
     private final SubmissionHistory history;
     private final Submitter submitter;
@@ -54,6 +54,7 @@ public final class UuidQuest {
         this.settings = settings;
         this.log = log;
         this.history = history;
+        this.guard = new ServerGuard(clock);
         this.transport = transport;
         this.clock = clock;
         this.userAgent = userAgent;
@@ -123,7 +124,8 @@ public final class UuidQuest {
         boolean warned = false;
         if (ServerGuard.isSuspicious(submission)) {
             for (String server : guard.block(submission.servers())) {
-                warn("Most UUIDs from " + server + " were fake (NPCs?), not collecting there until restart");
+                warn("Most UUIDs from " + server + " were fake (NPCs?), not collecting there for "
+                    + ServerGuard.COOLDOWN.toMinutes() + " min");
                 warned = true;
             }
         }
@@ -159,7 +161,10 @@ public final class UuidQuest {
             log.info("uuid.quest credits submissions to " + name);
             announcer.announce(QuestText.of("uuid.quest credits your submissions to " + name), EnumSet.of(AnnounceTarget.CHAT));
         } else {
-            warn("uuid.quest did not accept your API key, so your submissions are anonymous. Check the ApiKey setting.");
+            // Shown in chat, unlike the other warnings: it answers the user setting a key.
+            log.warn("uuid.quest did not accept the API key");
+            announcer.announce(QuestText.of("uuid.quest did not accept your API key, so your submissions are anonymous."
+                + " Check the ApiKey setting."), EnumSet.of(AnnounceTarget.CHAT));
         }
     }
 
@@ -200,10 +205,9 @@ public final class UuidQuest {
         announcer.announce(message, EnumSet.allOf(AnnounceTarget.class));
     }
 
-    /** Always shown in chat and as a notification, whatever {@code Announce} is set to. */
+    /** Fake-rate and abuse warnings go to the log only. */
     private void warn(String message) {
         log.warn(message);
-        announcer.announce(QuestText.of(message), EnumSet.allOf(AnnounceTarget.class), Platform.Severity.ERROR);
     }
 
     /** Shown in chat when {@code Verbose} is on; safe from any thread. */

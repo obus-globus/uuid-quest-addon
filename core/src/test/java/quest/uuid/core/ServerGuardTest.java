@@ -39,11 +39,23 @@ class ServerGuardTest {
 
     @Test
     void blockReturnsOnlyNewlyBlockedServers() {
-        var guard = new ServerGuard();
+        var guard = new ServerGuard(new TestSupport.Clock());
         assertEquals(List.of("a", "b"), guard.block(List.of("a", "b")));
         assertEquals(List.of("c"), guard.block(List.of("a", "c")));
         assertTrue(guard.isBlocked("a"));
         assertFalse(guard.isBlocked("d"));
+    }
+
+    @Test
+    void blockLastsForTheCooldown() {
+        var clock = new TestSupport.Clock();
+        var guard = new ServerGuard(clock);
+        guard.block(List.of("a"));
+        clock.advanceSeconds(ServerGuard.COOLDOWN.toSeconds() - 1);
+        assertTrue(guard.isBlocked("a"));
+        clock.advanceSeconds(1);
+        assertFalse(guard.isBlocked("a"));
+        assertEquals(List.of("a"), guard.block(List.of("a")));
     }
 
 }

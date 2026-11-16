@@ -96,12 +96,14 @@ of its range below 26: a Java 17 jar cannot be compiled against a Java 21 Minecr
   tightens the submitter's rate budget once most of its UUIDs turn out fake (NPCs with v4 UUIDs are the
   risk), and the budget is per IP.
 - uuid.quest flags a mostly invalid or fake submission with a `warning` text (202 on accept, or the status
-  after an early exit). `UuidQuest` shows it as a warning, except after the check when the guard below has
-  already warned about the same submission.
+  after an early exit). `UuidQuest.warn` logs it (owner's choice: fake-rate and abuse warnings go to the log
+  only, never chat or notifications), except after the check when the guard below already warned about the
+  same submission. A rejected API key is the exception and is shown in chat, as it answers the user.
 - `ServerGuard` is the safety net behind that filter: a finished submission that early-exited, or with at
-  least 10 checked and half of them fake, blocks the servers its UUIDs came from (stored per submission
-  as `servers`) for the session. Keep its thresholds stricter than uuid.quest's
-  (`QUEST_ABUSE_MIN_CHECKED` 50, `QUEST_ABUSE_FAKE_RATIO` 0.8 in `mcid/uuid-quest/src/config.rs`).
+  least 10 checked and half of them fake, pauses the servers its UUIDs came from (stored per submission
+  as `servers`) for `ServerGuard.COOLDOWN` (10 min). Keep its thresholds stricter than uuid.quest's
+  (`QUEST_ABUSE_MIN_CHECKED`, `QUEST_ABUSE_FAKE_RATIO` in `mcid/uuid-quest/src/config.rs`; uuid.quest blocks
+  only from the third such offence).
 - Core compiles against Gson 2.10 (what 1.20.1 ships) and Java 17; don't raise either.
 - The API contract is `https://uuid.quest/openapi.json` (source: `mcid/uuid-quest/api-spec/`).
 

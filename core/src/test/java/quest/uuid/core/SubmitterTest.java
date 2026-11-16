@@ -28,7 +28,7 @@ class SubmitterTest {
 
     private final TestSupport.Clock clock = new TestSupport.Clock();
     private final FakeTransport transport = new FakeTransport();
-    private final ServerGuard guard = new ServerGuard();
+    private final ServerGuard guard = new ServerGuard(clock);
     private final List<QuestText> reports = new ArrayList<>();
     private SubmissionHistory history;
     private Submitter submitter;

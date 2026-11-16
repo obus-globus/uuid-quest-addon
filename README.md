@@ -16,10 +16,10 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
 - Sends in batches, by default every 60 seconds, plus once when you turn `Enabled` off and once when
   the game closes (unless `Enabled` is off). On a rate limit it waits as long as the service's
   `Retry-After` says.
-- If uuid.quest finds most UUIDs from a server fake (usually NPCs with random UUIDs), it stops
-  collecting on that server until you restart the game and warns you in chat and with a notification.
-  It backs off well before uuid.quest would penalise your network. It also passes on uuid.quest's own
-  warning when a submission gets flagged, and warns you if uuid.quest does throttle the network for abuse.
+- If uuid.quest finds most UUIDs from a server fake (usually NPCs with random UUIDs), it pauses
+  collecting on that server for 10 minutes, well before uuid.quest would block your network. These
+  warnings, uuid.quest's own notices about flagged submissions, and abuse throttling are written to the
+  game log only, not to chat.
 - Keeps the last 100 submissions with their result and keeps checking unfinished ones, including after
   a restart. You can attach a `Note` to each submission.
 - Tells you when a submission contained UUIDs uuid.quest didn't have yet, in chat, as a notification,

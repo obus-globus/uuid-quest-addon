@@ -72,8 +72,9 @@ class UuidQuestTest {
         return StoredSettings.load(dir.resolve("uuid-quest.json"), new TestSupport.RecordingLog());
     }
 
+    private final TestSupport.RecordingLog log = new TestSupport.RecordingLog();
+
     private UuidQuest quest(StoredSettings settings) {
-        var log = new TestSupport.RecordingLog();
         return new UuidQuest(platform, settings, log, new SubmissionHistory(dir.resolve("submissions.json"), log),
             transport, clock, "uuid-quest/test");
     }
@@ -159,10 +160,9 @@ class UuidQuestTest {
         transport.respond(200, "application/json", null,
             "{\"state\":\"done\",\"counts\":{\"received\":20,\"checked\":20,\"fake\":12}}");
         quest.update();
-        assertEquals(List.of("Most UUIDs from a.example were fake (NPCs?), not collecting there until restart"),
-            platform.chat);
-        assertEquals(1, platform.notifications.size());
-        assertTrue(platform.notifications.get(0).startsWith("ERROR "));
+        assertTrue(log.lines.contains("WARN Most UUIDs from a.example were fake (NPCs?), not collecting there for 10 min"));
+        assertTrue(platform.chat.isEmpty());
+        assertTrue(platform.notifications.isEmpty());
 
         platform.listed.put(TestSupport.v4(), "Alice");
         quest.update();
@@ -171,6 +171,12 @@ class UuidQuestTest {
         platform.server = "b.example";
         quest.update();
         assertEquals(1, quest.submitter().pendingCount());
+
+        platform.server = "a.example";
+        clock.advanceSeconds(ServerGuard.COOLDOWN.toSeconds());
+        platform.listed.put(TestSupport.v4(), "Bob");
+        quest.update();
+        assertEquals(2, quest.submitter().pendingCount());
     }
 
     @Test
@@ -268,8 +274,9 @@ class UuidQuestTest {
                 + "\"attributed\":false,\"warning\":\"Most UUIDs were invalid.\"}");
         quest.onDisabled();
         quest.update();
-        assertEquals(List.of("uuid.quest: Most UUIDs were invalid."), platform.chat);
-        assertTrue(platform.notifications.get(0).startsWith("ERROR "));
+        assertTrue(log.lines.contains("WARN uuid.quest: Most UUIDs were invalid."));
+        assertTrue(platform.chat.isEmpty());
+        assertTrue(platform.notifications.isEmpty());
     }
 
     @Test
@@ -287,8 +294,8 @@ class UuidQuestTest {
             "{\"state\":\"done\",\"earlyExited\":true,\"warning\":\"Mostly fake.\","
                 + "\"counts\":{\"received\":20,\"checked\":20,\"fake\":18}}");
         quest.update();
-        assertEquals(List.of("Most UUIDs from a.example were fake (NPCs?), not collecting there until restart"),
-            platform.chat);
+        assertTrue(log.lines.contains("WARN Most UUIDs from a.example were fake (NPCs?), not collecting there for 10 min"));
+        assertTrue(log.lines.stream().noneMatch(line -> line.contains("Mostly fake.")));
         assertEquals("Mostly fake.", quest.history().recent(1).get(0).warning());
     }
 
