@@ -149,17 +149,24 @@ public final class UuidQuest {
     /** The key and outcome last told to the user, so each key is confirmed or rejected only once. */
     private volatile String lastAttribution;
 
+    /** Account the current key credits, as last confirmed by uuid.quest; null when anonymous or not known yet. */
+    private volatile String creditedTo;
+
     private void onAttribution(boolean attributed, String name) {
-        reportKey(settings.apiKey().trim(), attributed, name);
+        reportKey(settings.apiKey().trim(), attributed, name, false);
     }
 
-    private void reportKey(String key, boolean valid, String name) {
+    /** {@code afterSetting}: the result of checking a key the user just set, the only time an accepted key shows in chat. */
+    private void reportKey(String key, boolean valid, String name, boolean afterSetting) {
+        creditedTo = valid ? name : null;
         String outcome = key + (valid ? "|ok" : "|rejected");
         if (outcome.equals(lastAttribution)) return;
         lastAttribution = outcome;
         if (valid) {
             log.info("uuid.quest credits submissions to " + name);
-            announcer.announce(QuestText.of("uuid.quest credits your submissions to " + name), EnumSet.of(AnnounceTarget.CHAT));
+            if (afterSetting) {
+                announcer.announce(QuestText.of("uuid.quest credits your submissions to " + name), EnumSet.of(AnnounceTarget.CHAT));
+            }
         } else {
             // Shown in chat, unlike the other warnings: it answers the user setting a key.
             log.warn("uuid.quest did not accept the API key");
@@ -175,15 +182,16 @@ public final class UuidQuest {
     public void verifyApiKey(String key) {
         String trimmed = key == null ? "" : key.trim();
         lastAttribution = null;
+        creditedTo = null;
         if (trimmed.isEmpty()) return;
         transport.sendAsync(new Transport.Request(KEY_ENDPOINT, null, KEY_CHECK_TIMEOUT, userAgent, trimmed))
             .whenComplete((response, error) -> {
                 try {
                     if (response != null && response.status() == 200) {
                         String name = JsonParser.parseString(response.body()).getAsJsonObject().get("name").getAsString();
-                        reportKey(trimmed, true, name);
+                        reportKey(trimmed, true, name, true);
                     } else if (response != null && response.status() == 401) {
-                        reportKey(trimmed, false, null);
+                        reportKey(trimmed, false, null, true);
                     } else {
                         String status = response == null ? "no response" : String.valueOf(response.status());
                         log.warn("Could not check the API key (" + status + ")", error);
@@ -230,7 +238,8 @@ public final class UuidQuest {
         return QuestText.builder()
             .text("Seen " + submitter.rememberedCount() + " this session, pending " + submitter.pendingCount() + ". "
                 + "Submitted " + history.total("received") + ", new to uuid.quest " + history.total("forwarded")
-                + ", already known " + history.total("alreadyKnown") + ". ")
+                + ", already known " + history.total("alreadyKnown") + ". "
+                + (creditedTo != null && !settings.apiKey().isBlank() ? "Credited to " + creditedTo + ". " : ""))
             .link("uuid.quest", WEBSITE, "Open " + WEBSITE)
             .build();
     }

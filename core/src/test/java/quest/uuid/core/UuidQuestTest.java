@@ -246,11 +246,10 @@ class UuidQuestTest {
     @Test
     void reverifyingTheSameKeyReportsAgain() {
         var quest = quest(settings());
-        String ok = "{\"valid\":true,\"name\":\"scorpion\",\"label\":\"mod\",\"createdAt\":\"2026-11-16T14:00:00Z\"}";
-        transport.respond(200, "application/json", null, ok);
-        quest.verifyApiKey("uqk_good");
-        transport.respond(200, "application/json", null, ok);
-        quest.verifyApiKey("uqk_good");
+        transport.respond(401, "application/problem+json", null, "{}");
+        quest.verifyApiKey("uqk_bad");
+        transport.respond(401, "application/problem+json", null, "{}");
+        quest.verifyApiKey("uqk_bad");
         quest.update();
         assertEquals(2, platform.chat.size());
     }
@@ -336,6 +335,22 @@ class UuidQuestTest {
         assertEquals(6, last.size());
         assertTrue(last.get(0).plain().contains("id1 "));
         assertEquals("page 3/3  newer »", last.get(5).plain());
+    }
+
+    @Test
+    void acceptedKeyFromASubmissionOnlyShowsInTheTotals() {
+        var settings = settings();
+        settings.setApiKey("uqk_good");
+        var quest = quest(settings);
+        platform.listed.put(TestSupport.v4(), "Alice");
+        quest.update();
+        transport.respond(202, "application/json", null,
+            "{\"submitId\":\"s1\",\"state\":\"queued\",\"counts\":{\"received\":1,\"queued\":1},"
+                + "\"attributed\":true,\"attributedTo\":\"scorpion\"}");
+        quest.onDisabled();
+        quest.update();
+        assertTrue(platform.chat.isEmpty());
+        assertTrue(quest.totals().plain().contains("Credited to scorpion."));
     }
 
 }

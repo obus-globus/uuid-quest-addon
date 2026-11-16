@@ -42,8 +42,8 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
 - `ApiKey`: optional uuid.quest API key (`uqk_...`, created on your uuid.quest account page). With a key,
   your submissions count for your account on the leaderboard and use your account's rate limits instead
   of the per-IP ones. When you set a key, the mod checks it with uuid.quest right away and tells you in
-  chat which account it credits, or warns you if uuid.quest did not accept it (submissions then go in
-  anonymously). Settings listings only show the last four characters.
+  chat which account it credits, or that uuid.quest did not accept it (submissions then go in
+  anonymously). The account also shows in `.uuidquest` / `/uuidquest`. Settings listings only show the last four characters.
 
 ## LiquidBounce add-on
 
