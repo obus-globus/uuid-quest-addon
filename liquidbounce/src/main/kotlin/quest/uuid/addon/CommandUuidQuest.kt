@@ -29,8 +29,12 @@ class CommandUuidQuest(private val quest: UuidQuest) : CommandRegistrar {
                     literal("submissions")
                         .executes { showSubmissions(1); 1 }
                         .then(
-                            RequiredArgumentBuilder.argument<ClientCommandSource, Int>("page", IntegerArgumentType.integer(1))
-                                .executes { context -> showSubmissions(IntegerArgumentType.getInteger(context, "page")); 1 }
+                            RequiredArgumentBuilder
+                                .argument<ClientCommandSource, Int>("page", IntegerArgumentType.integer(1))
+                                .executes { context ->
+                                    showSubmissions(IntegerArgumentType.getInteger(context, "page"))
+                                    1
+                                }
                         )
                 )
                 .then(literal("settings").executes { showSettings(); 1 })
