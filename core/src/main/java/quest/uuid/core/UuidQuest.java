@@ -235,10 +235,12 @@ public final class UuidQuest {
             .build();
     }
 
-    /** {@code .uuidquest submissions}: the last ten, newest first; empty if there are none. */
+    /** {@code .uuidquest submissions}: the last ten, newest last so it ends up next to the chat input. */
     public List<QuestText> recentSubmissions() {
         var lines = new ArrayList<QuestText>();
-        for (Submission submission : history.recent(10)) {
+        var recent = new ArrayList<>(history.recent(10));
+        java.util.Collections.reverse(recent);
+        for (Submission submission : recent) {
             var details = new StringBuilder(" " + submission.sent() + " sent, " + submission.state());
             if (submission.finished()) details.append(", ").append(submission.summaryCounts());
             if (submission.attributedTo() != null) details.append(" | credited to ").append(submission.attributedTo());

@@ -299,4 +299,20 @@ class UuidQuestTest {
         assertEquals("Mostly fake.", quest.history().recent(1).get(0).warning());
     }
 
+    @Test
+    void listsSubmissionsOldestFirst() {
+        var settings = settings();
+        var quest = quest(settings);
+        for (String id : List.of("first", "second")) {
+            platform.listed.put(TestSupport.v4(), "Player" + id);
+            quest.update();
+            transport.accepted(id, 1);
+            quest.onDisabled();
+            clock.advanceSeconds(1);
+        }
+        var lines = quest.recentSubmissions();
+        assertTrue(lines.get(0).plain().contains("first"));
+        assertTrue(lines.get(1).plain().contains("second"));
+    }
+
 }
