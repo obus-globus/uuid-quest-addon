@@ -3,6 +3,7 @@
   "liquidbounce.uuidQuest.settings.interval.description": "Seconds between submissions.",
   "liquidbounce.uuidQuest.settings.tabList.description": "Collect UUIDs from the tab list.",
   "liquidbounce.uuidQuest.settings.worldPlayers.description": "Collect UUIDs from players in the world.",
+  "liquidbounce.uuidQuest.settings.submitOwnUuid.description": "Also submit your own account. uuid.quest stores hashed IP prefixes with each submission.",
   "liquidbounce.uuidQuest.settings.note.description": "Optional label sent with each submission (up to 200 characters).",
   "liquidbounce.uuidQuest.settings.announce.description": "Where to announce UUIDs that were new to uuid.quest. Shown once you are in a world.",
   "liquidbounce.uuidQuest.settings.verbose.description": "Show the outcome of every submission in chat."

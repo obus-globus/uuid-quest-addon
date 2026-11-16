@@ -32,4 +32,5 @@ Stored in `LiquidBounce/uuidquest.json`. Change them with LiquidBounce's `.value
 .value set uuidQuest.settings.enabled off
 ```
 
-`Enabled`, `Interval` (30 to 600 s), `TabList`, `WorldPlayers`, `Note`, `Announce`, `Verbose`.
+`Enabled`, `Interval` (30 to 600 s), `TabList`, `WorldPlayers`, `SubmitOwnUuid` (off: your own account is skipped),
+`Note`, `Announce`, `Verbose`.

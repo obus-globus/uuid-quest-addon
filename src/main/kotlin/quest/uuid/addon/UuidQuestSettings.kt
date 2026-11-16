@@ -13,6 +13,7 @@ object UuidQuestSettings : ValueGroup("Settings") {
     val interval by int("Interval", 60, 30..600, "s")
     val tabList by boolean("TabList", true)
     val worldPlayers by boolean("WorldPlayers", true)
+    val submitOwnUuid by boolean("SubmitOwnUuid", false)
     val note by text("Note", "")
     val announce by enumChoice("Announce", AnnounceMode.NOTIFICATION)
     val verbose by boolean("Verbose", false)

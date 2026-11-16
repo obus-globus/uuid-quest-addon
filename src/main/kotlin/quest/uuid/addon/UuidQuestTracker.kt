@@ -3,6 +3,7 @@ package quest.uuid.addon
 import net.ccbluex.liquidbounce.event.EventListener
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.network.chat.Component
+import java.util.UUID
 
 /**
  * Runs for as long as the add-on is loaded: collects UUIDs while in a world, submits and polls in
@@ -31,16 +32,17 @@ object UuidQuestTracker : EventListener {
     }
 
     private fun collect() {
+        // uuid.quest keeps hashed IP prefixes per submission, so the own account is opt-in.
+        val own = if (UuidQuestSettings.submitOwnUuid) null else mc.user.profileId
+        fun offer(uuid: UUID, name: String?) {
+            if (uuid != own && isPremium(uuid, name)) UuidQuestSubmitter.offer(uuid)
+        }
+
         if (UuidQuestSettings.tabList) {
-            mc.connection?.listedOnlinePlayers?.forEach { info ->
-                val profile = info.profile
-                if (isPremium(profile.id, profile.name)) UuidQuestSubmitter.offer(profile.id)
-            }
+            mc.connection?.listedOnlinePlayers?.forEach { info -> offer(info.profile.id, info.profile.name) }
         }
         if (UuidQuestSettings.worldPlayers) {
-            mc.level?.players()?.forEach { player ->
-                if (isPremium(player.uuid, player.gameProfile.name)) UuidQuestSubmitter.offer(player.uuid)
-            }
+            mc.level?.players()?.forEach { player -> offer(player.uuid, player.gameProfile.name) }
         }
     }
 
