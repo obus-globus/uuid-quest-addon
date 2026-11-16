@@ -67,6 +67,17 @@ final class Compat {
         *///?}
     }
 
+    /** Runs the chat command {@code command} (with its slash) when clicked and shows {@code hover} on mouse-over. */
+    static Style runCommand(Style style, String command, Component hover) {
+        //? if >=1.21.5 {
+        return style.withClickEvent(new ClickEvent.RunCommand(command))
+            .withHoverEvent(new HoverEvent.ShowText(hover));
+        //?} else {
+        /*return style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hover));
+        *///?}
+    }
+
     /** Opens {@code url} when clicked and shows {@code hover} on mouse-over. */
     static Style link(Style style, String url, Component hover) {
         //? if >=1.21.5 {

@@ -47,7 +47,10 @@ final class UuidQuestCommand {
                 context.getSource().sendFeedback(Texts.toComponent(mod.quest().totals()));
                 return Command.SINGLE_SUCCESS;
             })
-            .then(literal("submissions").executes(context -> showSubmissions(context, mod)))
+            .then(literal("submissions")
+                .executes(context -> showSubmissions(context, mod, 1))
+                .then(argument("page", IntegerArgumentType.integer(1))
+                    .executes(context -> showSubmissions(context, mod, IntegerArgumentType.getInteger(context, "page")))))
             .then(literal("settings").executes(context -> showSettings(context, settings)))
             .then(literal("flush").executes(context -> flush(context, mod)))
             .then(literal("config").executes(context -> {
@@ -121,8 +124,8 @@ final class UuidQuestCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int showSubmissions(CommandContext<FabricClientCommandSource> context, UuidQuestClient mod) {
-        List<QuestText> recent = mod.quest().recentSubmissions();
+    private static int showSubmissions(CommandContext<FabricClientCommandSource> context, UuidQuestClient mod, int page) {
+        List<QuestText> recent = mod.quest().submissionsPage(page);
         if (recent.isEmpty()) return reply(context, "No submissions yet");
         for (QuestText line : recent) context.getSource().sendFeedback(Texts.toComponent(line));
         return Command.SINGLE_SUCCESS;

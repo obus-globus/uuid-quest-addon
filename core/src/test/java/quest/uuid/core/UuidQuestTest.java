@@ -222,8 +222,8 @@ class UuidQuestTest {
             quest.totals().plain());
         assertEquals(new QuestText.Link("uuid.quest", UuidQuest.WEBSITE, "Open " + UuidQuest.WEBSITE),
             quest.totals().parts().get(1));
-        assertEquals(1, quest.recentSubmissions().size());
-        assertTrue(quest.recentSubmissions().get(0).plain().endsWith(" s1 1 sent, queued"));
+        assertEquals(1, quest.submissionsPage(1).size());
+        assertTrue(quest.submissionsPage(1).get(0).plain().endsWith(" s1 1 sent, queued"));
     }
 
     @Test
@@ -310,9 +310,32 @@ class UuidQuestTest {
             quest.onDisabled();
             clock.advanceSeconds(1);
         }
-        var lines = quest.recentSubmissions();
+        var lines = quest.submissionsPage(1);
         assertTrue(lines.get(0).plain().contains("first"));
         assertTrue(lines.get(1).plain().contains("second"));
+    }
+
+    @Test
+    void pagesSubmissionsWithClickableNavigation() {
+        var quest = quest(settings());
+        for (int i = 1; i <= 25; i++) {
+            platform.listed.put(TestSupport.v4(), "Player" + i);
+            quest.update();
+            transport.accepted("id" + i, 1);
+            quest.onDisabled();
+            clock.advanceSeconds(1);
+        }
+        List<QuestText> first = quest.submissionsPage(1);
+        assertEquals(11, first.size());
+        assertTrue(first.get(0).plain().contains("id16"));
+        assertTrue(first.get(9).plain().contains("id25"));
+        assertEquals("« older  page 1/3", first.get(10).plain());
+        assertEquals(new QuestText.Command("« older", "submissions 2", "Page 2"), first.get(10).parts().get(0));
+
+        List<QuestText> last = quest.submissionsPage(9);
+        assertEquals(6, last.size());
+        assertTrue(last.get(0).plain().contains("id1 "));
+        assertEquals("page 3/3  newer »", last.get(5).plain());
     }
 
 }

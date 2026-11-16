@@ -50,7 +50,8 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
 Put `uuid-quest-addon-<version>+26.3.jar` into `mods/` next to LiquidBounce 0.42.0 for Minecraft 26.3.
 It starts with LiquidBounce; there is no module to enable.
 
-`.uuidquest` shows totals, `.uuidquest submissions` lists recent submissions with their results,
+`.uuidquest` shows totals, `.uuidquest submissions [page]` lists submissions with their results (10 per
+page, with clickable buttons to page through),
 `.uuidquest settings` prints the current settings, and `.uuidquest flush` sends the pending UUIDs now.
 
 Settings live in `LiquidBounce/uuidquest.json`. Change them with LiquidBounce's `.value` command:
@@ -81,7 +82,8 @@ Minecraft        jar
 26.2 - 26.3      uuid-quest-fabric-<version>+26.2-26.3.jar
 ```
 
-`/uuidquest` shows totals, `/uuidquest submissions` lists recent submissions, `/uuidquest settings`
+`/uuidquest` shows totals, `/uuidquest submissions [page]` lists submissions (10 per page, with clickable
+buttons to page through), `/uuidquest settings`
 prints the current settings and `/uuidquest flush` sends the pending UUIDs now.
 
 `/uuidquest config` or Mod Menu's config button opens the settings screen. To change one setting from

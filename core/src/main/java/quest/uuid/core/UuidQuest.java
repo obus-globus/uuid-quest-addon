@@ -235,12 +235,24 @@ public final class UuidQuest {
             .build();
     }
 
-    /** {@code .uuidquest submissions}: the last ten, newest last so it ends up next to the chat input. */
-    public List<QuestText> recentSubmissions() {
+    /** Submissions per page of {@link #submissionsPage}. */
+    public static final int PAGE_SIZE = 10;
+
+    /**
+     * {@code .uuidquest submissions [page]}: page 1 holds the newest {@link #PAGE_SIZE}, each page listed oldest
+     * first so the newest line ends up next to the chat input, followed by a line with clickable older/newer
+     * buttons when there is more than one page. Empty if there are no submissions; out-of-range pages are clamped.
+     */
+    public List<QuestText> submissionsPage(int page) {
+        List<Submission> all = history.recent(Integer.MAX_VALUE);
+        int pages = Math.max(1, (all.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int current = Math.min(Math.max(page, 1), pages);
+        var slice = new ArrayList<>(all.subList(Math.min((current - 1) * PAGE_SIZE, all.size()),
+            Math.min(current * PAGE_SIZE, all.size())));
+        java.util.Collections.reverse(slice);
+
         var lines = new ArrayList<QuestText>();
-        var recent = new ArrayList<>(history.recent(10));
-        java.util.Collections.reverse(recent);
-        for (Submission submission : recent) {
+        for (Submission submission : slice) {
             var details = new StringBuilder(" " + submission.sent() + " sent, " + submission.state());
             if (submission.finished()) details.append(", ").append(submission.summaryCounts());
             if (submission.attributedTo() != null) details.append(" | credited to ").append(submission.attributedTo());
@@ -250,6 +262,15 @@ public final class UuidQuest {
                 .link(submission.submitId())
                 .text(details.toString())
                 .build());
+        }
+        if (pages > 1) {
+            var nav = QuestText.builder();
+            if (current < pages) {
+                nav.command("« older", "submissions " + (current + 1), "Page " + (current + 1)).text("  ");
+            }
+            nav.text("page " + current + "/" + pages);
+            if (current > 1) nav.text("  ").command("newer »", "submissions " + (current - 1), "Page " + (current - 1));
+            lines.add(nav.build());
         }
         return lines;
     }

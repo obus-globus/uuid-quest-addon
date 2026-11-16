@@ -1,6 +1,8 @@
 package quest.uuid.addon
 
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.ccbluex.liquidbounce.features.command.CommandRegistrar
 import net.ccbluex.liquidbounce.features.command.brigadier.ClientCommandSource
@@ -23,14 +25,21 @@ class CommandUuidQuest(private val quest: UuidQuest) : CommandRegistrar {
         dispatcher.register(
             literal("uuidquest")
                 .executes { chat(quest.totals().toComponent()); 1 }
-                .then(literal("submissions").executes { showSubmissions(); 1 })
+                .then(
+                    literal("submissions")
+                        .executes { showSubmissions(1); 1 }
+                        .then(
+                            RequiredArgumentBuilder.argument<ClientCommandSource, Int>("page", IntegerArgumentType.integer(1))
+                                .executes { context -> showSubmissions(IntegerArgumentType.getInteger(context, "page")); 1 }
+                        )
+                )
                 .then(literal("settings").executes { showSettings(); 1 })
                 .then(literal("flush").executes { flush(); 1 })
         )
     }
 
-    private fun showSubmissions() {
-        val recent = quest.recentSubmissions()
+    private fun showSubmissions(page: Int) {
+        val recent = quest.submissionsPage(page)
         if (recent.isEmpty()) chat("No submissions yet")
         recent.forEach { line -> chat(line.toComponent()) }
     }

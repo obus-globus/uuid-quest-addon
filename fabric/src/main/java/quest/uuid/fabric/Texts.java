@@ -16,6 +16,10 @@ final class Texts {
         for (QuestText.Part part : text.parts()) {
             if (part instanceof QuestText.Plain plain) {
                 component.append(gray(plain.text()));
+            } else if (part instanceof QuestText.Command command) {
+                component.append(Component.literal(command.label()).withStyle(style -> Compat.runCommand(
+                    style.withColor(ChatFormatting.AQUA).withUnderlined(true), "/uuidquest " + command.args(),
+                    Component.literal(command.hover()))));
             } else if (part instanceof QuestText.Link link) {
                 component.append(Component.literal(link.label()).withStyle(style -> Compat.link(
                     style.withColor(ChatFormatting.AQUA).withUnderlined(true), link.url(), Component.literal(link.hover()))));
