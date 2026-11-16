@@ -13,7 +13,10 @@ User-facing behaviour and install per version are in [README.md](README.md).
   `GET /v1/submissions/{id}`; `RetryPolicy` decides retry/drop; `SubmissionHistory` persists the last 100
   (a 404 on poll is stored as the non-API state `expired`); `Announcer` holds messages until
   `Platform.inWorld()`. Platforms implement `Platform`, `Settings` and `QuestLog`; `StoredSettings` is the
-  JSON-backed `Settings` the Fabric mod uses. Core's classes are copied into each jar (`bundled`
+  JSON-backed `Settings` the Fabric mod uses. `UpdateChecker` asks GitHub's
+  `/releases/latest` (pre-releases like `snapshot` are ignored) at most every 6 hours, caching the answer in
+  `update-check.json` next to the history, and links the jar whose name ends in the running version's
+  `+<range>.jar` (else the release page); platforms turn it on with `UuidQuest.enableUpdateCheck`. Core's classes are copied into each jar (`bundled`
   configuration), not nested.
 - `liquidbounce/`: the add-on (Kotlin). Built from [`../lb-addon-workspace`](../lb-addon-workspace)
   (CCBlueX's template); its CLAUDE.md covers the add-on build setup and traps (no `mappings` line, plain

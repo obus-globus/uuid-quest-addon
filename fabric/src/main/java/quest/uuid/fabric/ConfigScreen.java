@@ -41,6 +41,7 @@ final class ConfigScreen extends Screen {
         String note;
         AnnounceMode announce;
         boolean verbose;
+        boolean updateCheck;
 
         Draft(Settings from) {
             enabled = from.enabled();
@@ -51,6 +52,7 @@ final class ConfigScreen extends Screen {
             note = from.note();
             announce = from.announce();
             verbose = from.verbose();
+            updateCheck = from.updateCheck();
         }
 
         @Override public boolean enabled() { return enabled; }
@@ -61,6 +63,7 @@ final class ConfigScreen extends Screen {
         @Override public String note() { return note; }
         @Override public AnnounceMode announce() { return announce; }
         @Override public boolean verbose() { return verbose; }
+        @Override public boolean updateCheck() { return updateCheck; }
     }
 
     ConfigScreen(Screen parent, UuidQuestClient mod) {
@@ -100,6 +103,9 @@ final class ConfigScreen extends Screen {
             .tooltip(Tooltip.create(Component.literal(
                 "Where to announce UUIDs that were new to uuid.quest. Shown once you are in a world.")))
             .build());
+        y += ROW;
+        addRenderableWidget(toggle(left, y, "Update check", () -> draft.updateCheck, value -> draft.updateCheck = value,
+            "Look for a newer release on GitHub, at most every 6 hours."));
         y += ROW;
         addRenderableWidget(new IntervalSlider(left, y, full));
         y += ROW + 4;

@@ -89,7 +89,8 @@ final class UuidQuestCommand {
                             mod.changeSettings(() -> settings.setAnnounce(mode));
                             return reply(context, "Announce: " + mode.tag());
                         })))
-                .then(toggle(mod, "verbose", settings::setVerbose))));
+                .then(toggle(mod, "verbose", settings::setVerbose))
+                .then(toggle(mod, "updatecheck", settings::setUpdateCheck))));
     }
 
     private static LiteralArgumentBuilder<FabricClientCommandSource> toggle(UuidQuestClient mod, String name,
@@ -122,6 +123,7 @@ final class UuidQuestCommand {
         reply(context, "Note: " + settings.note());
         reply(context, "Announce: " + settings.announce().tag());
         reply(context, "Verbose: " + settings.verbose());
+        reply(context, "UpdateCheck: " + settings.updateCheck());
         return reply(context, "Change one with /uuidquest set <name> <value> or /uuidquest config");
     }
 

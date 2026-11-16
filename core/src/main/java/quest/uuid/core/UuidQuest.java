@@ -31,6 +31,10 @@ public final class UuidQuest {
     private final Announcer announcer = new Announcer();
     private final SubmissionHistory history;
     private final Submitter submitter;
+    private final Transport transport;
+    private final LongSupplier clock;
+    private final String userAgent;
+    private volatile UpdateChecker updateChecker;
 
     public UuidQuest(Platform platform, Settings settings, QuestLog log, Path historyFile, String userAgent) {
         this(platform, settings, log, new SubmissionHistory(historyFile, log), new HttpTransport(),
@@ -43,6 +47,9 @@ public final class UuidQuest {
         this.settings = settings;
         this.log = log;
         this.history = history;
+        this.transport = transport;
+        this.clock = clock;
+        this.userAgent = userAgent;
         this.submitter = new Submitter(transport, history, guard, log, clock, userAgent);
         submitter.setOnAbuseThrottled(seconds ->
             warn("uuid.quest is blocking this network for " + seconds / 60 + " min after too many fake UUIDs"));
@@ -56,8 +63,20 @@ public final class UuidQuest {
         return history;
     }
 
+    /**
+     * Turns on the GitHub release check, run once per session while {@code UpdateCheck} is on.
+     *
+     * @param version     the running version, {@code <mod version>+<minecraft range>}
+     * @param assetPrefix start of this variant's jar names, e.g. {@code uuid-quest-fabric-}
+     */
+    public void enableUpdateCheck(Path cacheFile, String version, String assetPrefix) {
+        updateChecker = new UpdateChecker(transport, cacheFile, log, clock, userAgent, version, assetPrefix);
+    }
+
     /** Client thread, about once a second. */
     public void update() {
+        UpdateChecker checker = updateChecker;
+        if (checker != null && settings.updateCheck()) checker.checkOnce(this::onUpdateAvailable);
         if (settings.enabled()) {
             collect();
             if (submitter.isDue(settings.interval())) {
@@ -99,6 +118,15 @@ public final class UuidQuest {
             announcer.announce(message, settings.announce().targets());
         }
         verboseReport(submission.summaryText());
+    }
+
+    private void onUpdateAvailable(UpdateChecker.Update update) {
+        log.info("uuid.quest " + update.version() + " is available: " + update.url());
+        var message = QuestText.builder()
+            .text("uuid.quest " + update.version() + " is available: ")
+            .link("download", update.url(), "Open " + update.url())
+            .build();
+        announcer.announce(message, EnumSet.allOf(AnnounceTarget.class));
     }
 
     /** Always shown in chat and as a notification, whatever {@code Announce} is set to. */

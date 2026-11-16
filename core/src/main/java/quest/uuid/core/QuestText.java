@@ -10,25 +10,19 @@ public record QuestText(List<Part> parts) {
         parts = List.copyOf(parts);
     }
 
-    public sealed interface Part permits Plain, SubmissionLink {
+    public sealed interface Part permits Plain, Link {
     }
 
     public record Plain(String text) implements Part {
     }
 
-    /** Shows the first 8 characters of the id and opens its status page when clicked. */
-    public record SubmissionLink(String submitId) implements Part {
+    /** Shows {@code label} and opens {@code url} when clicked; notifications and logs show only the label. */
+    public record Link(String label, String url, String hover) implements Part {
 
-        public String shortId() {
-            return submitId.length() > 8 ? submitId.substring(0, 8) : submitId;
-        }
-
-        public String url() {
-            return "https://uuid.quest/?id=" + submitId;
-        }
-
-        public String hover() {
-            return "Open " + submitId + " on uuid.quest";
+        /** The first 8 characters of the id, opening its status page. */
+        public static Link submission(String submitId) {
+            String shortId = submitId.length() > 8 ? submitId.substring(0, 8) : submitId;
+            return new Link(shortId, "https://uuid.quest/?id=" + submitId, "Open " + submitId + " on uuid.quest");
         }
     }
 
@@ -46,8 +40,8 @@ public record QuestText(List<Part> parts) {
         for (Part part : parts) {
             if (part instanceof Plain plain) {
                 out.append(plain.text());
-            } else if (part instanceof SubmissionLink link) {
-                out.append(link.shortId());
+            } else if (part instanceof Link link) {
+                out.append(link.label());
             }
         }
         return out.toString();
@@ -63,7 +57,12 @@ public record QuestText(List<Part> parts) {
         }
 
         public Builder link(String submitId) {
-            parts.add(new SubmissionLink(submitId));
+            parts.add(Link.submission(submitId));
+            return this;
+        }
+
+        public Builder link(String label, String url, String hover) {
+            parts.add(new Link(label, url, hover));
             return this;
         }
 

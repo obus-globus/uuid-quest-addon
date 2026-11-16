@@ -26,6 +26,7 @@ public final class StoredSettings implements Settings {
         String note = "";
         AnnounceMode announce = AnnounceMode.NOTIFICATION;
         boolean verbose = false;
+        boolean updateCheck = true;
 
         Values copy() {
             return GSON.fromJson(GSON.toJson(this), Values.class);
@@ -90,6 +91,7 @@ public final class StoredSettings implements Settings {
             v.note = from.note();
             v.announce = from.announce();
             v.verbose = from.verbose();
+            v.updateCheck = from.updateCheck();
         });
     }
 
@@ -123,6 +125,10 @@ public final class StoredSettings implements Settings {
 
     public void setVerbose(boolean value) {
         update(v -> v.verbose = value);
+    }
+
+    public void setUpdateCheck(boolean value) {
+        update(v -> v.updateCheck = value);
     }
 
     /** Writes a temporary file and moves it over the old one, so a crash mid-write keeps the previous file. */
@@ -184,6 +190,11 @@ public final class StoredSettings implements Settings {
     @Override
     public boolean verbose() {
         return values.verbose;
+    }
+
+    @Override
+    public boolean updateCheck() {
+        return values.updateCheck;
     }
 
 }

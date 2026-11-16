@@ -7,9 +7,9 @@ import quest.uuid.core.UuidQuest
 class UuidQuestAddon : LiquidBounceAddon() {
 
     override fun onInitialize() {
-        val history = FabricLoader.getInstance().gameDir
-            .resolve("LiquidBounce").resolve("uuid-quest").resolve("submissions.json")
-        val quest = UuidQuest(LiquidBouncePlatform, UuidQuestSettings.View, AddonLog, history, "$id/$version")
+        val dataDir = FabricLoader.getInstance().gameDir.resolve("LiquidBounce").resolve("uuid-quest")
+        val quest = UuidQuest(LiquidBouncePlatform, UuidQuestSettings.View, AddonLog, dataDir.resolve("submissions.json"), "$id/$version")
+        quest.enableUpdateCheck(dataDir.resolve("update-check.json"), version, "uuid-quest-addon-")
         Companion.quest = quest
         config("UuidQuest", mutableListOf(UuidQuestSettings))
         UuidQuestTracker.addon = this

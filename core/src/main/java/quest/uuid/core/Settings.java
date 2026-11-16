@@ -31,4 +31,7 @@ public interface Settings {
     /** Show every submission's outcome in chat. */
     boolean verbose();
 
+    /** Look for a newer release on GitHub, at most every few hours. */
+    boolean updateCheck();
+
 }

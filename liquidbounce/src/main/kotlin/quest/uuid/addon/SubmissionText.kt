@@ -15,14 +15,14 @@ fun QuestText.toComponent(): MutableComponent {
     for (part in parts()) {
         when (part) {
             is QuestText.Plain -> component.append(gray(part.text()))
-            is QuestText.SubmissionLink -> component.append(submissionLink(part))
+            is QuestText.Link -> component.append(link(part))
         }
     }
     return component
 }
 
-private fun submissionLink(link: QuestText.SubmissionLink): MutableComponent =
-    variable(link.shortId()).withStyle { style ->
+private fun link(link: QuestText.Link): MutableComponent =
+    variable(link.label()).withStyle { style ->
         style.withUnderlined(true)
             .withClickEvent(ClickEvent.OpenUrl(URI(link.url())))
             .withHoverEvent(HoverEvent.ShowText(Component.literal(link.hover())))

@@ -16,8 +16,8 @@ final class Texts {
         for (QuestText.Part part : text.parts()) {
             if (part instanceof QuestText.Plain plain) {
                 component.append(gray(plain.text()));
-            } else if (part instanceof QuestText.SubmissionLink link) {
-                component.append(Component.literal(link.shortId()).withStyle(style -> Compat.link(
+            } else if (part instanceof QuestText.Link link) {
+                component.append(Component.literal(link.label()).withStyle(style -> Compat.link(
                     style.withColor(ChatFormatting.AQUA).withUnderlined(true), link.url(), Component.literal(link.hover()))));
             }
         }

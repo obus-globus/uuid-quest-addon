@@ -35,6 +35,7 @@ public final class UuidQuestClient implements ClientModInitializer {
         settings = StoredSettings.load(config.resolve("uuid-quest.json"), log);
         quest = new UuidQuest(new FabricPlatform(), settings, log,
             config.resolve("uuid-quest").resolve("submissions.json"), MOD_ID + "/" + version);
+        quest.enableUpdateCheck(config.resolve("uuid-quest").resolve("update-check.json"), version, "uuid-quest-fabric-");
 
         ClientTickEvents.END_CLIENT_TICK.register(this::onTick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> quest.onStopping());
