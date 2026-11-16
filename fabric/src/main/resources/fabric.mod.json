@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "uuid-quest",
+  "version": "${version}",
+  "name": "uuid.quest",
+  "description": "Submits the premium (v4) player UUIDs the client sees to uuid.quest.",
+  "authors": [
+    "obus-globus"
+  ],
+  "contact": {
+    "homepage": "https://uuid.quest/"
+  },
+  "license": "GPL-3.0-or-later",
+  "icon": "assets/uuid-quest/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "quest.uuid.fabric.UuidQuestClient"
+    ],
+    "modmenu": [
+      "quest.uuid.fabric.ModMenuIntegration"
+    ]
+  },
+  "depends": {
+    "minecraft": "${minecraft_range}",
+    "fabricloader": ">=${loader_min}",
+    "fabric-api": "*",
+    "java": ">=${java}"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}

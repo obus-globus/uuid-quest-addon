@@ -79,6 +79,20 @@ public final class StoredSettings implements Settings {
         save();
     }
 
+    /** Takes every value from {@code from}, saving once. */
+    public void apply(Settings from) {
+        update(v -> {
+            v.enabled = from.enabled();
+            v.interval = from.interval();
+            v.tabList = from.tabList();
+            v.worldPlayers = from.worldPlayers();
+            v.submitOwnUuid = from.submitOwnUuid();
+            v.note = from.note();
+            v.announce = from.announce();
+            v.verbose = from.verbose();
+        });
+    }
+
     public void setEnabled(boolean value) {
         update(v -> v.enabled = value);
     }

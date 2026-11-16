@@ -69,6 +69,21 @@ class StoredSettingsTest {
     }
 
     @Test
+    void appliesAnotherSettingsObjectInOneGo() {
+        Path file = dir.resolve("uuid-quest.json");
+        var settings = StoredSettings.load(file, new TestSupport.RecordingLog());
+        var other = StoredSettings.load(dir.resolve("other.json"), new TestSupport.RecordingLog());
+        other.setVerbose(true);
+        other.setInterval(7);
+        other.setNote(" label ");
+        settings.apply(other);
+        var loaded = StoredSettings.load(file, new TestSupport.RecordingLog());
+        assertTrue(loaded.verbose());
+        assertEquals(30, loaded.interval());
+        assertEquals("label", loaded.note());
+    }
+
+    @Test
     void parsesAnnounceTagsLoosely() {
         assertEquals(AnnounceMode.BOTH, AnnounceMode.byTag("both"));
         assertEquals(AnnounceMode.OFF, AnnounceMode.byTag("Off"));
