@@ -125,4 +125,10 @@ class UpdateCheckerTest {
         assertEquals("1.2.0", UpdateChecker.modVersion("v1.2.0+1.20.1-1.20.2"));
     }
 
+    @Test
+    void userAgentNamesVariantAndPlayedVersion() {
+        assertEquals("uuid-quest/1.0.0 (fabric; minecraft 1.21.4)", UuidQuest.userAgent("1.0.0+1.20.3-1.21.4", "fabric", "1.21.4"));
+        assertEquals("uuid-quest/1.0.0 (liquidbounce; minecraft 26.3)", UuidQuest.userAgent("1.0.0+26.3", "liquidbounce", "26.3"));
+    }
+
 }

@@ -8,7 +8,10 @@ class UuidQuestAddon : LiquidBounceAddon() {
 
     override fun onInitialize() {
         val dataDir = FabricLoader.getInstance().gameDir.resolve("LiquidBounce").resolve("uuid-quest")
-        val quest = UuidQuest(LiquidBouncePlatform, UuidQuestSettings.View, AddonLog, dataDir.resolve("submissions.json"), "$id/$version")
+        val minecraft = FabricLoader.getInstance().getModContainer("minecraft")
+            .map { it.metadata.version.friendlyString }.orElse("unknown")
+        val userAgent = UuidQuest.userAgent(version, "liquidbounce", minecraft)
+        val quest = UuidQuest(LiquidBouncePlatform, UuidQuestSettings.View, AddonLog, dataDir.resolve("submissions.json"), userAgent)
         quest.enableUpdateCheck(dataDir.resolve("update-check.json"), version, "uuid-quest-addon-")
         Companion.quest = quest
         config("UuidQuest", mutableListOf(UuidQuestSettings))

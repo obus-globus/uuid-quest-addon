@@ -56,6 +56,14 @@ public final class UuidQuest {
             warn("uuid.quest is blocking this network for " + seconds / 60 + " min after too many fake UUIDs"));
     }
 
+    /**
+     * {@code uuid-quest/1.0.0 (fabric; minecraft 1.21.4)}: the mod version without the jar's Minecraft range,
+     * so uuid.quest can tell the variants and the Minecraft version actually played apart.
+     */
+    public static String userAgent(String version, String platform, String minecraft) {
+        return "uuid-quest/" + UpdateChecker.modVersion(version) + " (" + platform + "; minecraft " + minecraft + ")";
+    }
+
     public Submitter submitter() {
         return submitter;
     }
