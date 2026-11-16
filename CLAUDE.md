@@ -16,8 +16,8 @@ User-facing behaviour and install per version are in [README.md](README.md).
   JSON-backed `Settings` the Fabric mod uses. `UpdateChecker` asks GitHub's
   `/releases/latest` (pre-releases like `snapshot` are ignored) at most every 6 hours, caching the answer in
   `update-check.json` next to the history, and links the jar whose name ends in the running version's
-  `+<range>.jar` (else the release page); platforms turn it on with `UuidQuest.enableUpdateCheck`. Core's classes are copied into each jar (`bundled`
-  configuration), not nested.
+  `+<range>.jar` (else the release page); platforms turn it on with `UuidQuest.enableUpdateCheck`. Core's
+  classes are copied into each jar (`bundled` configuration), not nested.
 - `liquidbounce/`: the add-on (Kotlin). Built from [`../lb-addon-workspace`](../lb-addon-workspace)
   (CCBlueX's template); its CLAUDE.md covers the add-on build setup and traps (no `mappings` line, plain
   `implementation`). Not a module on purpose: `UuidQuestTracker` is a plain `EventListener` whose tick
