@@ -8,6 +8,9 @@ them against Mojang and adds new ones to its dataset.
   UUIDs are skipped.
 - Sends in batches (default every 60 seconds), when `Enabled` is turned off, and when the game
   closes (unless `Enabled` is off). Honours the service's `Retry-After` on rate limits.
+- Stops collecting on a server for the rest of the session once uuid.quest finds most of its UUIDs
+  fake (e.g. NPCs with random UUIDs), well before uuid.quest would penalise the network, and warns in
+  chat and as a notification. It also warns if uuid.quest does throttle the network for abuse.
 - Keeps the last 100 submissions with their uuid.quest result in `LiquidBounce/uuid-quest/submissions.json`
   and keeps polling unfinished ones, also after a restart. An optional `Note` is sent with each one.
 - Announces UUIDs that turned out new to uuid.quest in chat and/or as a LiquidBounce notification

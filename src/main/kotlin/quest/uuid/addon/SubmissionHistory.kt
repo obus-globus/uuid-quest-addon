@@ -21,6 +21,8 @@ class Submission(
     var counts: Map<String, Int>,
     var earlyExited: Boolean = false,
     var lastPolled: Long = 0L,
+    /** Addresses of the servers the UUIDs were seen on; null in entries saved before this was tracked. */
+    val servers: List<String>? = null,
 ) {
     val finished get() = state == STATE_DONE || state == STATE_EXPIRED
 

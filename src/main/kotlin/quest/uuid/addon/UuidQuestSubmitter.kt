@@ -10,6 +10,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -39,6 +40,9 @@ object UuidQuestSubmitter {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<UUID, Unit>) = size > MAX_REMEMBERED
     }
     private val pending = ConcurrentLinkedQueue<UUID>()
+
+    /** Server each pending UUID was seen on, so a submission's result can be traced back to servers. */
+    private val origins = ConcurrentHashMap<UUID, String>()
     private val inFlight = AtomicBoolean(false)
     private val polling = AtomicBoolean(false)
 
@@ -67,8 +71,9 @@ object UuidQuestSubmitter {
         WAITING("uuid.quest asked to wait"),
     }
 
-    fun offer(uuid: UUID) {
+    fun offer(uuid: UUID, server: String) {
         if (remembered.put(uuid, Unit) == null) {
+            origins[uuid] = server
             pending.add(uuid)
             if (pendingSince == 0L) pendingSince = System.currentTimeMillis()
         }
@@ -96,6 +101,10 @@ object UuidQuestSubmitter {
         }
 
         val batch = drainBatch()
+        if (batch.isEmpty()) {
+            inFlight.set(false)
+            return FlushResult.NOTHING_PENDING
+        }
         log.info("Sending ${batch.size} UUIDs to uuid.quest (${pending.size} still pending)")
         http.sendAsync(request(batch, note, REQUEST_TIMEOUT), HttpResponse.BodyHandlers.ofString())
             .whenComplete { response, error ->
@@ -123,6 +132,10 @@ object UuidQuestSubmitter {
         while (pending.isNotEmpty() && remaining() > Duration.ZERO && System.currentTimeMillis() >= notBefore) {
             if (!inFlight.compareAndSet(false, true)) return
             val batch = drainBatch()
+            if (batch.isEmpty()) {
+                inFlight.set(false)
+                return
+            }
             log.info("Sending ${batch.size} UUIDs to uuid.quest before exit")
             try {
                 val response = http.send(request(batch, note, remaining()), HttpResponse.BodyHandlers.ofString())
@@ -138,9 +151,18 @@ object UuidQuestSubmitter {
         if (pending.isNotEmpty()) log.info("${pending.size} UUIDs were not sent before exit")
     }
 
+    /** Takes up to [MAX_BATCH] pending UUIDs, dropping those seen on a server blocked since. */
     private fun drainBatch(): List<UUID> {
         val batch = ArrayList<UUID>(minOf(pending.size, MAX_BATCH))
-        while (batch.size < MAX_BATCH) batch.add(pending.poll() ?: break)
+        while (batch.size < MAX_BATCH) {
+            val uuid = pending.poll() ?: break
+            val server = origins[uuid]
+            if (server != null && ServerGuard.isBlocked(server)) {
+                origins.remove(uuid)
+            } else {
+                batch.add(uuid)
+            }
+        }
         if (pending.isEmpty()) pendingSince = 0L
         return batch
     }
@@ -177,7 +199,8 @@ object UuidQuestSubmitter {
         val status = response.statusCode()
         when {
             status == 202 -> {
-                val submission = runCatching { parseAccepted(response.body(), batch.size, note) }.getOrElse {
+                val servers = batch.mapNotNull { origins.remove(it) }.distinct()
+                val submission = runCatching { parseAccepted(response.body(), batch.size, note, servers) }.getOrElse {
                     log.warn("uuid.quest accepted ${batch.size} UUIDs but sent an unreadable body: ${response.body()}", it)
                     return
                 }
@@ -196,17 +219,22 @@ object UuidQuestSubmitter {
                 val seconds = retryAfterSeconds(response) ?: DEFAULT_RETRY_SECONDS
                 retryLater(batch, seconds)
                 log.info("uuid.quest answered $status, retrying ${batch.size} UUIDs in ${seconds}s")
-                if (status == 429) report(gray("uuid.quest is rate limiting, retrying in ${seconds}s"))
+                if (status == 429 && isAbuseThrottled(response)) {
+                    onAbuseThrottled(seconds)
+                } else if (status == 429) {
+                    report(gray("uuid.quest is rate limiting, retrying in ${seconds}s"))
+                }
             }
 
             else -> {
+                batch.forEach(origins::remove)
                 log.warn("uuid.quest rejected ${batch.size} UUIDs ($status): ${response.body()}")
                 report(gray("uuid.quest rejected the submission ($status)"))
             }
         }
     }
 
-    private fun parseAccepted(body: String, sent: Int, note: String): Submission {
+    private fun parseAccepted(body: String, sent: Int, note: String, servers: List<String>): Submission {
         val json = JsonParser.parseString(body).asJsonObject
         return Submission(
             submitId = json.get("submitId").asString,
@@ -215,8 +243,18 @@ object UuidQuestSubmitter {
             note = cleanNote(note),
             state = json.get("state").asString,
             counts = parseCounts(json.getAsJsonObject("counts")),
+            servers = servers,
         )
     }
+
+    /** Called when uuid.quest penalises this network for submitting mostly fake UUIDs. */
+    @Volatile
+    var onAbuseThrottled: (seconds: Long) -> Unit = {}
+
+    private fun isAbuseThrottled(response: HttpResponse<String>) =
+        isProblemJson(response) && runCatching {
+            JsonParser.parseString(response.body()).asJsonObject.get("type").asString.endsWith("/abuse-throttled")
+        }.getOrDefault(false)
 
     private fun isProblemJson(response: HttpResponse<String>) =
         response.headers().firstValue("Content-Type").map { "json" in it }.orElse(false)

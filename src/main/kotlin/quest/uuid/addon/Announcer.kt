@@ -27,13 +27,21 @@ enum class AnnounceMode(override val tag: String, val targets: Set<AnnounceTarge
  */
 object Announcer {
 
-    private class Announcement(val message: Component, val targets: Set<AnnounceTarget>)
+    private class Announcement(
+        val message: Component,
+        val targets: Set<AnnounceTarget>,
+        val severity: NotificationEvent.Severity,
+    )
 
     private val queue = ConcurrentLinkedQueue<Announcement>()
 
     /** Notifications get the plain text of [message]; links only work in chat. */
-    fun announce(message: Component, targets: Set<AnnounceTarget>) {
-        if (targets.isNotEmpty()) queue.add(Announcement(message, targets.toSet()))
+    fun announce(
+        message: Component,
+        targets: Set<AnnounceTarget>,
+        severity: NotificationEvent.Severity = NotificationEvent.Severity.SUCCESS,
+    ) {
+        if (targets.isNotEmpty()) queue.add(Announcement(message, targets.toSet(), severity))
     }
 
     /** Render thread only. */
@@ -45,7 +53,7 @@ object Announcer {
                 chat(announcement.message)
             }
             if (AnnounceTarget.NOTIFICATION in announcement.targets) {
-                notification("uuid.quest", announcement.message.string, NotificationEvent.Severity.SUCCESS)
+                notification("uuid.quest", announcement.message.string, announcement.severity)
             }
         }
     }

@@ -20,6 +20,10 @@ covers the add-on build setup and traps. User-facing behaviour is in [README.md]
 - `PremiumUuid.isPremium` is the only filter. Keep it strict: uuid.quest early-exits a submission
   and tightens the submitter's rate budget once most of its UUIDs turn out fake (NPCs with v4 UUIDs
   are the risk), and the budget is per IP.
+- `ServerGuard` is the safety net behind that filter: a finished submission that early-exited, or with
+  at least 10 checked and half of them fake, blocks the servers its UUIDs came from (stored per
+  submission as `servers`) for the session. Keep its thresholds stricter than uuid.quest's
+  (`QUEST_ABUSE_MIN_CHECKED` 50, `QUEST_ABUSE_FAKE_RATIO` 0.8 in `mcid/uuid-quest/src/config.rs`).
 - The API contract is `https://uuid.quest/openapi.json` (source: `mcid/uuid-quest/api-spec/`).
 
 ## Build and test
