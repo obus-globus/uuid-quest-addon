@@ -105,9 +105,11 @@ of its range below 26: a Java 17 jar cannot be compiled against a Java 21 Minecr
 ## Releases
 
 CI (`.github/workflows/build.yml`) builds everything with JDK 17, 21 and 25 and refreshes the `snapshot`
-pre-release with all jars on every push to `main`. A published GitHub release tagged
-`v<mod_version>+<mc>` (the add-on's version, e.g. `v1.0.0+26.3`) gets all jars attached; if it is not a
-pre-release, the add-on jar alone is uploaded to the LiquidBounce marketplace as item 894 (repo variable
-`MARKETPLACE_ITEM_ID`). That step needs the repo secret `API_TOKEN`, our LiquidBounce API token from
-`../../docs/credentials.md` on our machine; it is not set yet (owner, 2026-11-16), so such a release would
-fail at the upload. The Fabric jars are not published anywhere else.
+pre-release with all jars on every push to `main`. A published GitHub release tagged `v<mod_version>+<mc>` (the
+add-on's version, e.g. `v1.0.0+26.3`) gets all jars attached; if it is not a pre-release, the add-on jar alone
+is uploaded to the LiquidBounce marketplace as item 894 (repo variable `MARKETPLACE_ITEM_ID`) through
+`POST https://api.liquidbounce.net/marketplace/items/{id}/revisions`. That upload authenticates with trusted
+publishing: the item trusts `obus-globus/uuid-quest-addon`, ref `refs/tags/*`, workflow `build.yml`, and the
+step sends GitHub's identity token with audience `https://api.liquidbounce.net` (verified with a no-file probe
+on 2026-11-16). An `API_TOKEN` secret, if ever set, is used instead. Renaming the workflow file or the repository
+breaks the trust until it is updated on the item's page. The Fabric jars are not published anywhere else.
