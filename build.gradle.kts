@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.fabric.loom) apply false
     alias(libs.plugins.fabric.loom.remap) apply false
     alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 tasks.register("collectJars") {

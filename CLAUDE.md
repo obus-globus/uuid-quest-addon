@@ -25,7 +25,8 @@ User-facing behaviour and install per version are in [README.md](README.md).
   `GET /v1/key` (`UuidQuest.verifyApiKey`, read-only on the server); the add-on skips that while
   LiquidBounce loads its config, which also fires `onChanged`. Listings show the key
   via `Settings.maskApiKey`. A 413 halves the batch size for the session (`RetryPolicy.Decision.SPLIT`).
-- `liquidbounce/`: the add-on (Kotlin). Built from [`../lb-addon-workspace`](../lb-addon-workspace)
+- `liquidbounce/`: the add-on (Kotlin), checked by detekt with LiquidBounce's configs (`config/detekt/`, same
+  plugin version as the client); `check`, so `build` and CI, runs both passes (`detekt`, `detektMain`). Built from [`../lb-addon-workspace`](../lb-addon-workspace)
   (CCBlueX's template); its CLAUDE.md covers the add-on build setup and traps (no `mappings` line, plain
   `implementation`). Not a module on purpose: `UuidQuestTracker` is a plain `EventListener` whose tick
   also runs in menus, and `UuidQuestSettings` is an add-on `config(...)` edited through

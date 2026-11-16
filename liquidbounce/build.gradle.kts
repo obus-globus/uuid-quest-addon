@@ -2,6 +2,7 @@
 plugins {
     id("net.fabricmc.fabric-loom")
     id("org.jetbrains.kotlin.jvm")
+    id("dev.detekt")
 }
 
 base {
@@ -123,4 +124,19 @@ tasks.jar {
     from(rootProject.file("LICENSE")) {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
+}
+
+// Both passes LiquidBounce runs: the style rules, and the stricter ones that need the compile classpath.
+detekt {
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+}
+
+tasks.withType<dev.detekt.gradle.Detekt>().matching { it.name == "detektMain" }.configureEach {
+    config.setFrom(rootProject.file("config/detekt/detekt-type-resolution.yml"))
+    buildUponDefaultConfig.set(false)
+}
+
+tasks.check {
+    dependsOn("detekt", "detektMain")
 }

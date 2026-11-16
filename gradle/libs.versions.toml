@@ -2,6 +2,7 @@
 # release you target. A mismatch is the usual cause of an add-on that compiles but crashes at runtime.
 # The Fabric mod's per-version dependencies live in fabric/versions/<node>/gradle.properties.
 [versions]
+detekt = "2.0.0-alpha.6"
 jdk = "25"
 
 minecraft = "26.3"
@@ -27,6 +28,8 @@ junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
 junit-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
 
 [plugins]
+# Same version and configs (config/detekt, copied from LiquidBounce) as the client the add-on targets.
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 fabric-loom = { id = "net.fabricmc.fabric-loom", version.ref = "fabric-loom" }
 fabric-loom-remap = { id = "net.fabricmc.fabric-loom-remap", version.ref = "fabric-loom" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
