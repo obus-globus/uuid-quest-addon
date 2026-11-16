@@ -20,6 +20,10 @@ class UuidQuestAddon : LiquidBounceAddon() {
         registerCommand(CommandUuidQuest(quest))
     }
 
+    override fun onStarted() {
+        started = true
+    }
+
     override fun onStopping() {
         quest?.onStopping()
     }
@@ -28,6 +32,11 @@ class UuidQuestAddon : LiquidBounceAddon() {
         /** Null until the add-on is initialized; settings callbacks can fire before that. */
         @Volatile
         var quest: UuidQuest? = null
+            private set
+
+        /** True once LiquidBounce has loaded the configs. */
+        @Volatile
+        var started = false
             private set
     }
 

@@ -64,8 +64,10 @@ public final class UuidQuestClient implements ClientModInitializer {
     /** Applies {@code change} to the settings and flushes the queue if it switched collecting off. */
     void changeSettings(Runnable change) {
         boolean wasEnabled = settings.enabled();
+        String previousKey = settings.apiKey();
         change.run();
         if (wasEnabled && !settings.enabled()) quest.onDisabled();
+        if (!settings.apiKey().equals(previousKey)) quest.verifyApiKey(settings.apiKey());
     }
 
     ConfigScreen configScreen(Screen parent) {

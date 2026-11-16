@@ -20,7 +20,9 @@ User-facing behaviour and install per version are in [README.md](README.md).
   classes are copied into each jar (`bundled` configuration), not nested. The optional `apiKey` setting
   goes out as `Authorization: Bearer` on submissions only (`Submitter.submitRequest`), never on polls or to
   GitHub. uuid.quest still accepts a submission with an unknown key, anonymously, and says so in the 202's
-  `attributed`/`attributedTo`; `UuidQuest.onAttribution` confirms or warns once per key. Listings show the key
+  `attributed`/`attributedTo`; `UuidQuest.onAttribution` confirms or warns once per key. Setting a key checks it at once with
+  `GET /v1/key` (`UuidQuest.verifyApiKey`, read-only on the server); the add-on skips that while
+  LiquidBounce loads its config, which also fires `onChanged`. Listings show the key
   via `Settings.maskApiKey`. A 413 halves the batch size for the session (`RetryPolicy.Decision.SPLIT`).
 - `liquidbounce/`: the add-on (Kotlin). Built from [`../lb-addon-workspace`](../lb-addon-workspace)
   (CCBlueX's template); its CLAUDE.md covers the add-on build setup and traps (no `mappings` line, plain

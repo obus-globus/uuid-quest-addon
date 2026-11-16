@@ -1,5 +1,8 @@
 package quest.uuid.core;
 
+import com.google.gson.JsonParser;
+
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -20,6 +23,8 @@ import java.util.function.LongSupplier;
 public final class UuidQuest {
 
     public static final String WEBSITE = "https://uuid.quest/";
+    private static final URI KEY_ENDPOINT = URI.create("https://uuid.quest/v1/key");
+    private static final Duration KEY_CHECK_TIMEOUT = Duration.ofSeconds(15);
 
     /** How long closing the game may wait for the final batch. */
     public static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
@@ -136,15 +141,47 @@ public final class UuidQuest {
     private volatile String lastAttribution;
 
     private void onAttribution(boolean attributed, String name) {
-        String outcome = settings.apiKey().trim() + (attributed ? "|ok" : "|rejected");
+        reportKey(settings.apiKey().trim(), attributed, name);
+    }
+
+    private void reportKey(String key, boolean valid, String name) {
+        String outcome = key + (valid ? "|ok" : "|rejected");
         if (outcome.equals(lastAttribution)) return;
         lastAttribution = outcome;
-        if (attributed) {
+        if (valid) {
             log.info("uuid.quest credits submissions to " + name);
             announcer.announce(QuestText.of("uuid.quest credits your submissions to " + name), EnumSet.of(AnnounceTarget.CHAT));
         } else {
             warn("uuid.quest did not accept your API key, so your submissions are anonymous. Check the ApiKey setting.");
         }
+    }
+
+    /**
+     * Checks {@code key} with {@code GET /v1/key} right after it was set and reports the result in chat
+     * (once in a world). Read-only on uuid.quest's side; an empty key just forgets the last result.
+     */
+    public void verifyApiKey(String key) {
+        String trimmed = key == null ? "" : key.trim();
+        lastAttribution = null;
+        if (trimmed.isEmpty()) return;
+        transport.sendAsync(new Transport.Request(KEY_ENDPOINT, null, KEY_CHECK_TIMEOUT, userAgent, trimmed))
+            .whenComplete((response, error) -> {
+                try {
+                    if (response != null && response.status() == 200) {
+                        String name = JsonParser.parseString(response.body()).getAsJsonObject().get("name").getAsString();
+                        reportKey(trimmed, true, name);
+                    } else if (response != null && response.status() == 401) {
+                        reportKey(trimmed, false, null);
+                    } else {
+                        String status = response == null ? "no response" : String.valueOf(response.status());
+                        log.warn("Could not check the API key (" + status + ")", error);
+                        announcer.announce(QuestText.of("Could not check the API key right now (" + status
+                            + "); the next submission will tell"), EnumSet.of(AnnounceTarget.CHAT));
+                    }
+                } catch (RuntimeException e) {
+                    log.warn("Checking the API key failed", e);
+                }
+            });
     }
 
     private void onUpdateAvailable(UpdateChecker.Update update) {

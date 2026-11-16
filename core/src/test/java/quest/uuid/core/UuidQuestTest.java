@@ -220,4 +220,40 @@ class UuidQuestTest {
         assertTrue(quest.recentSubmissions().get(0).plain().endsWith(" s1 1 sent, queued"));
     }
 
+    @Test
+    void verifiesANewApiKey() {
+        var settings = settings();
+        var quest = quest(settings);
+        transport.respond(200, "application/json", null,
+            "{\"valid\":true,\"name\":\"scorpion\",\"label\":\"mod\",\"createdAt\":\"2026-11-16T14:00:00Z\"}");
+        quest.verifyApiKey(" uqk_good ");
+        quest.update();
+        assertEquals("uqk_good", transport.requests.get(0).bearer());
+        assertEquals(List.of("uuid.quest credits your submissions to scorpion"), platform.chat);
+
+        transport.respond(401, "application/problem+json", null, "{}");
+        quest.verifyApiKey("uqk_bad");
+        quest.update();
+        assertTrue(platform.chat.get(1).startsWith("uuid.quest did not accept your API key"));
+    }
+
+    @Test
+    void reverifyingTheSameKeyReportsAgain() {
+        var quest = quest(settings());
+        String ok = "{\"valid\":true,\"name\":\"scorpion\",\"label\":\"mod\",\"createdAt\":\"2026-11-16T14:00:00Z\"}";
+        transport.respond(200, "application/json", null, ok);
+        quest.verifyApiKey("uqk_good");
+        transport.respond(200, "application/json", null, ok);
+        quest.verifyApiKey("uqk_good");
+        quest.update();
+        assertEquals(2, platform.chat.size());
+    }
+
+    @Test
+    void emptyKeyIsNotChecked() {
+        var quest = quest(settings());
+        quest.verifyApiKey("  ");
+        assertTrue(transport.requests.isEmpty());
+    }
+
 }

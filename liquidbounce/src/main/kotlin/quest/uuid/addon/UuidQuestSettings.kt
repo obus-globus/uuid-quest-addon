@@ -28,7 +28,10 @@ object UuidQuestSettings : ValueGroup("Settings") {
     val announce by enumChoice("Announce", AnnounceMode.NOTIFICATION)
     val verbose by boolean("Verbose", false)
     val updateCheck by boolean("UpdateCheck", true)
-    val apiKey by text("ApiKey", "")
+    // Loading the config at startup also fires onChanged, so only changes made after that are checked.
+    val apiKey by text("ApiKey", "").onChanged { key ->
+        if (UuidQuestAddon.started) UuidQuestAddon.quest?.verifyApiKey(key)
+    }
 
     /** The settings as core reads them. */
     object View : Settings {
