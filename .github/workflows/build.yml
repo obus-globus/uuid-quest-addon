@@ -18,20 +18,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
-      - name: Setting up JDK
+      # The Fabric jars build against Java 17, 21 and 25; the last one listed runs Gradle.
+      - name: Setting up JDKs
         uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
-          java-version: '25'
+          java-version: |
+            17
+            21
+            25
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
+      # Runs core's tests and builds the add-on and every Fabric node; collectJars puts the jars in build/libs.
       - name: Build
-        run: ./gradlew build
+        run: >-
+          ./gradlew build collectJars
+          -Porg.gradle.java.installations.fromEnv=JAVA_HOME_17_X64,JAVA_HOME_21_X64,JAVA_HOME_25_X64
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: addon
+          name: jars
           path: build/libs/*.jar
 
       - name: Publish snapshot release
@@ -41,8 +48,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          JAR=$(find build/libs -name '*.jar' -not -name '*-sources.jar' | head -n1)
-          [ -n "$JAR" ] || { echo "[ERROR] no jar in build/libs" >&2; exit 1; }
+          mapfile -t JARS < <(find build/libs -maxdepth 1 -name '*.jar' | sort)
+          [ "${#JARS[@]}" -gt 0 ] || { echo "[ERROR] no jar in build/libs" >&2; exit 1; }
 
           NOTES="Automatic build of \`${GITHUB_SHA::7}\` from \`main\`.
 
@@ -51,30 +58,26 @@ jobs:
           # Recreate rather than edit: `gh release upload --clobber` cannot retarget the tag when
           # main has moved on.
           gh release delete snapshot --cleanup-tag --yes || true
-          gh release create snapshot "$JAR" \
+          gh release create snapshot "${JARS[@]}" \
             --title "Snapshot" \
             --notes "$NOTES" \
             --prerelease \
             --target "$GITHUB_SHA"
 
-      - name: Attach jar to release
+      - name: Attach jars to release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          JAR=$(find build/libs -name '*.jar' -not -name '*-sources.jar' | head -n1)
-          [ -n "$JAR" ] || { echo "[ERROR] no jar in build/libs" >&2; exit 1; }
-
-          # The tag names the version the jar was built as, e.g. v1.0.0+26.3
+          # The tag names the version the add-on jar was built as, e.g. v1.0.0+26.3
           TAG="${{ github.event.release.tag_name }}"
-          case "$JAR" in
-            *"-${TAG#v}.jar") ;;
-            *) echo "[ERROR] $JAR does not match the tag $TAG, check mod_version and minecraft" >&2; exit 1 ;;
-          esac
+          ADDON="build/libs/uuid-quest-addon-${TAG#v}.jar"
+          [ -f "$ADDON" ] || { echo "[ERROR] no $ADDON, check mod_version and minecraft against the tag $TAG" >&2; exit 1; }
 
-          gh release upload "$TAG" "$JAR" --clobber
+          mapfile -t JARS < <(find build/libs -maxdepth 1 -name '*.jar' | sort)
+          gh release upload "$TAG" "${JARS[@]}" --clobber
 
       - name: Publish to the marketplace
         if: github.event_name == 'release' && !github.event.release.prerelease && vars.MARKETPLACE_ITEM_ID != ''
@@ -87,8 +90,9 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_COMMIT=$(git rev-parse HEAD)
-          JAR=$(find build/libs -name '*.jar' -not -name '*-sources.jar' | head -n1)
-          [ -n "$JAR" ] || { echo "[ERROR] no jar in build/libs" >&2; exit 1; }
+          # Only the LiquidBounce add-on goes to the marketplace, not the standalone Fabric jars.
+          JAR=$(find build/libs -maxdepth 1 -name 'uuid-quest-addon-*.jar' | head -n1)
+          [ -n "$JAR" ] || { echo "[ERROR] no add-on jar in build/libs" >&2; exit 1; }
           # The client unpacks a revision and expects exactly one jar at its root.
           zip -j addon.zip "$JAR"
           # --form-string: -F would read a release body starting with @ as a file path.
