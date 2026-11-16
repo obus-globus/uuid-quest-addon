@@ -24,7 +24,7 @@ public final class StoredSettings implements Settings {
         boolean worldPlayers = true;
         boolean submitOwnUuid = false;
         String note = "";
-        AnnounceMode announce = AnnounceMode.NOTIFICATION;
+        AnnounceMode announce = AnnounceMode.OFF;
         boolean verbose = false;
         boolean updateCheck = true;
         String apiKey = "";
@@ -36,7 +36,7 @@ public final class StoredSettings implements Settings {
         void normalize() {
             interval = clampInterval(interval);
             note = note == null ? "" : cleanNote(note);
-            if (announce == null) announce = AnnounceMode.NOTIFICATION;
+            if (announce == null) announce = AnnounceMode.OFF;
             apiKey = apiKey == null ? "" : apiKey.trim();
         }
     }

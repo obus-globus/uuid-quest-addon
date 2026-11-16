@@ -24,7 +24,7 @@ class StoredSettingsTest {
         assertTrue(settings.worldPlayers());
         assertFalse(settings.submitOwnUuid());
         assertEquals("", settings.note());
-        assertEquals(AnnounceMode.NOTIFICATION, settings.announce());
+        assertEquals(AnnounceMode.OFF, settings.announce());
         assertFalse(settings.verbose());
     }
 

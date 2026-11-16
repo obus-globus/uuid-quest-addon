@@ -22,8 +22,8 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
   game log only, not to chat.
 - Keeps the last 100 submissions with their result and keeps checking unfinished ones, including after
   a restart. You can attach a `Note` to each submission.
-- Tells you when a submission contained UUIDs uuid.quest didn't have yet, in chat, as a notification,
-  or both (`Announce`). In chat the submission id links to its status page. Messages wait until you
+- Can tell you when a submission contained UUIDs uuid.quest didn't have yet, in chat, as a notification,
+  or both (`Announce`, off by default). In chat the submission id links to its status page. Messages wait until you
   are in a world. With `Verbose` on, chat also shows the outcome of every submission.
 - Tells you in chat and with a notification when a newer release is on GitHub, with a link to the
   jar for your Minecraft version. It asks GitHub at most once every 6 hours, even if the game keeps
@@ -36,7 +36,7 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
 - `TabList`, `WorldPlayers`: where to collect UUIDs from.
 - `SubmitOwnUuid`: also send your own account (off by default).
 - `Note`: a label sent with each submission.
-- `Announce`: Off, Chat, Notification or Both.
+- `Announce`: Off (default), Chat, Notification or Both.
 - `Verbose`: show every submission's outcome in chat.
 - `UpdateCheck`: look for a newer release on GitHub (on by default).
 - `ApiKey`: optional uuid.quest API key (`uqk_...`, created on your uuid.quest account page). With a key,

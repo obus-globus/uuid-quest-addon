@@ -25,7 +25,7 @@ object UuidQuestSettings : ValueGroup("Settings") {
     val worldPlayers by boolean("WorldPlayers", true)
     val submitOwnUuid by boolean("SubmitOwnUuid", false)
     val note by text("Note", "")
-    val announce by enumChoice("Announce", AnnounceMode.NOTIFICATION)
+    val announce by enumChoice("Announce", AnnounceMode.OFF)
     val verbose by boolean("Verbose", false)
     val updateCheck by boolean("UpdateCheck", true)
     // Loading the config at startup also fires onChanged, so only changes made after that are checked.
