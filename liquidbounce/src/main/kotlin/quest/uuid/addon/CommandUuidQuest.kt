@@ -6,6 +6,7 @@ import net.ccbluex.liquidbounce.features.command.CommandRegistrar
 import net.ccbluex.liquidbounce.features.command.brigadier.ClientCommandSource
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.mc
+import quest.uuid.core.Settings
 import quest.uuid.core.UuidQuest
 
 /**
@@ -35,7 +36,10 @@ class CommandUuidQuest(private val quest: UuidQuest) : CommandRegistrar {
     }
 
     private fun showSettings() {
-        UuidQuestSettings.collectValuesRecursively().forEach { value -> chat("${value.name}: ${value.get()}") }
+        UuidQuestSettings.collectValuesRecursively().forEach { value ->
+            val shown = if (value.name == "ApiKey") Settings.maskApiKey(value.get() as String) else value.get()
+            chat("${value.name}: $shown")
+        }
         chat("Change one with .value set uuidQuest.settings.<name> <value>")
     }
 

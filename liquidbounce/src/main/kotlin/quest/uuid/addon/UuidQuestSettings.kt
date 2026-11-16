@@ -28,6 +28,7 @@ object UuidQuestSettings : ValueGroup("Settings") {
     val announce by enumChoice("Announce", AnnounceMode.NOTIFICATION)
     val verbose by boolean("Verbose", false)
     val updateCheck by boolean("UpdateCheck", true)
+    val apiKey by text("ApiKey", "")
 
     /** The settings as core reads them. */
     object View : Settings {
@@ -40,6 +41,7 @@ object UuidQuestSettings : ValueGroup("Settings") {
         override fun announce() = UuidQuestSettings.announce.core
         override fun verbose() = UuidQuestSettings.verbose
         override fun updateCheck() = UuidQuestSettings.updateCheck
+        override fun apiKey() = UuidQuestSettings.apiKey
     }
 
 }

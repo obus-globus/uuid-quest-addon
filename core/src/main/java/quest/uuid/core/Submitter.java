@@ -220,6 +220,13 @@ public final class Submitter {
         return batch;
     }
 
+    /** Where the API key for submissions comes from; only submissions carry it, never status polls. */
+    private volatile java.util.function.Supplier<String> apiKey = () -> "";
+
+    public void setApiKey(java.util.function.Supplier<String> apiKey) {
+        this.apiKey = apiKey;
+    }
+
     private Transport.Request submitRequest(List<UUID> batch, String note, Duration timeout) {
         var uuids = new JsonArray();
         batch.forEach(uuid -> uuids.add(uuid.toString()));
@@ -227,7 +234,9 @@ public final class Submitter {
         body.add("uuids", uuids);
         String cleaned = cleanNote(note);
         if (cleaned != null) body.addProperty("note", cleaned);
-        return new Transport.Request(SUBMIT_ENDPOINT, body.toString(), timeout, userAgent);
+        String key = apiKey.get();
+        String bearer = key == null || key.isBlank() ? null : key.trim();
+        return new Transport.Request(SUBMIT_ENDPOINT, body.toString(), timeout, userAgent, bearer);
     }
 
     static String cleanNote(String note) {

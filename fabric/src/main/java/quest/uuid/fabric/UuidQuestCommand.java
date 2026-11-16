@@ -74,6 +74,17 @@ final class UuidQuestCommand {
                             mod.changeSettings(() -> settings.setNote(note));
                             return reply(context, "Note: " + settings.note());
                         })))
+                .then(literal("apikey")
+                    .executes(context -> {
+                        mod.changeSettings(() -> settings.setApiKey(""));
+                        return reply(context, "API key cleared, submitting anonymously");
+                    })
+                    .then(argument("key", StringArgumentType.word())
+                        .executes(context -> {
+                            String key = StringArgumentType.getString(context, "key");
+                            mod.changeSettings(() -> settings.setApiKey(key));
+                            return reply(context, "API key: " + Settings.maskApiKey(settings.apiKey()));
+                        })))
                 .then(literal("announce")
                     .then(argument("mode", StringArgumentType.word())
                         .suggests((context, builder) -> {
@@ -124,6 +135,7 @@ final class UuidQuestCommand {
         reply(context, "Announce: " + settings.announce().tag());
         reply(context, "Verbose: " + settings.verbose());
         reply(context, "UpdateCheck: " + settings.updateCheck());
+        reply(context, "ApiKey: " + Settings.maskApiKey(settings.apiKey()));
         return reply(context, "Change one with /uuidquest set <name> <value> or /uuidquest config");
     }
 

@@ -1,3 +1,5 @@
+<img src="fabric/src/main/resources/assets/uuid-quest/icon.png" alt="" width="96" align="right">
+
 # uuid.quest for Minecraft
 
 Sends the premium player UUIDs your client sees to [uuid.quest](https://uuid.quest/), which checks
@@ -37,6 +39,10 @@ every Minecraft release from 1.20.1 to 26.3. Install only one of them, since bot
 - `Announce`: Off, Chat, Notification or Both.
 - `Verbose`: show every submission's outcome in chat.
 - `UpdateCheck`: look for a newer release on GitHub (on by default).
+- `ApiKey`: optional uuid.quest API key (`uqk_...`, created on your uuid.quest account page). With a key,
+  your submissions count for your account on the leaderboard and use your account's rate limits instead
+  of the per-IP ones. uuid.quest treats an unknown key as anonymous, so a wrong key does not show an
+  error. Settings listings only show the last four characters.
 
 ## LiquidBounce add-on
 
@@ -52,6 +58,7 @@ Settings live in `LiquidBounce/uuidquest.json`. Change them with LiquidBounce's 
 .value set uuidQuest.settings.note "my label"
 .value set uuidQuest.settings.announce Both
 .value set uuidQuest.settings.enabled off
+.value set uuidQuest.settings.apiKey uqk_...
 ```
 
 Submissions are kept in `LiquidBounce/uuid-quest/submissions.json`, and notifications show up as
@@ -79,6 +86,7 @@ prints the current settings and `/uuidquest flush` sends the pending UUIDs now.
 `/uuidquest config` or Mod Menu's config button opens the settings screen. To change one setting from
 chat, use `/uuidquest set <name> <value>`, for example `/uuidquest set note my label`,
 `/uuidquest set announce Both`, `/uuidquest set interval 120` or `/uuidquest set enabled false`.
+Set the API key with `/uuidquest set apikey uqk_...`, and clear it with `/uuidquest set apikey`.
 
 Settings live in `config/uuid-quest.json` and submissions in `config/uuid-quest/submissions.json`.
 Notifications show up as vanilla toasts.

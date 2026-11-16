@@ -42,6 +42,7 @@ final class ConfigScreen extends Screen {
         AnnounceMode announce;
         boolean verbose;
         boolean updateCheck;
+        String apiKey;
 
         Draft(Settings from) {
             enabled = from.enabled();
@@ -53,6 +54,7 @@ final class ConfigScreen extends Screen {
             announce = from.announce();
             verbose = from.verbose();
             updateCheck = from.updateCheck();
+            apiKey = from.apiKey();
         }
 
         @Override public boolean enabled() { return enabled; }
@@ -64,6 +66,7 @@ final class ConfigScreen extends Screen {
         @Override public AnnounceMode announce() { return announce; }
         @Override public boolean verbose() { return verbose; }
         @Override public boolean updateCheck() { return updateCheck; }
+        @Override public String apiKey() { return apiKey; }
     }
 
     ConfigScreen(Screen parent, UuidQuestClient mod) {
@@ -78,7 +81,8 @@ final class ConfigScreen extends Screen {
         int left = width / 2 - COLUMN - GAP / 2;
         int right = width / 2 + GAP / 2;
         int full = 2 * COLUMN + GAP;
-        int y = 20;
+        // Fits the smallest GUI height (240), so the Done button stays on screen.
+        int y = 12;
 
         addRenderableWidget(centered(title, y));
         y += 16;
@@ -104,10 +108,9 @@ final class ConfigScreen extends Screen {
                 "Where to announce UUIDs that were new to uuid.quest. Shown once you are in a world.")))
             .build());
         y += ROW;
-        addRenderableWidget(toggle(left, y, "Update check", () -> draft.updateCheck, value -> draft.updateCheck = value,
+        addRenderableWidget(new IntervalSlider(left, y, COLUMN));
+        addRenderableWidget(toggle(right, y, "Update check", () -> draft.updateCheck, value -> draft.updateCheck = value,
             "Look for a newer release on GitHub, at most every 6 hours."));
-        y += ROW;
-        addRenderableWidget(new IntervalSlider(left, y, full));
         y += ROW + 4;
 
         addRenderableWidget(centered(
@@ -118,6 +121,15 @@ final class ConfigScreen extends Screen {
         note.setValue(draft.note);
         note.setResponder(value -> draft.note = value);
         addRenderableWidget(note);
+        y += ROW + 4;
+
+        addRenderableWidget(centered(Component.literal("API key (optional, credits your uuid.quest account)"), y));
+        y += 12;
+        var apiKey = new EditBox(font, left, y, full, 20, Component.literal("API key"));
+        apiKey.setMaxLength(200);
+        apiKey.setValue(draft.apiKey);
+        apiKey.setResponder(value -> draft.apiKey = value);
+        addRenderableWidget(apiKey);
         y += ROW + 8;
 
         addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())

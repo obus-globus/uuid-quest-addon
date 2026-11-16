@@ -270,4 +270,35 @@ class SubmitterTest {
         assertTrue(history.unfinished().isEmpty());
     }
 
+    @Test
+    void apiKeyIsSentWithSubmissionsOnly() {
+        submitter.setApiKey(() -> "  uqk_secret  ");
+        submitter.offer(TestSupport.v4(), "a.example");
+        transport.accepted("s1", 1);
+        submitter.flush("", reports::add);
+        assertEquals("uqk_secret", transport.requests.get(0).bearer());
+
+        transport.respond(200, "application/json", null,
+            "{\"submitId\":\"s1\",\"state\":\"queued\",\"counts\":{\"received\":1,\"queued\":1}}");
+        submitter.pollUnfinished(submission -> { });
+        assertEquals(2, transport.requests.size());
+        assertEquals(null, transport.requests.get(1).bearer());
+    }
+
+    @Test
+    void blankApiKeySubmitsAnonymously() {
+        submitter.setApiKey(() -> " ");
+        submitter.offer(TestSupport.v4(), "a.example");
+        transport.accepted("s1", 1);
+        submitter.flush("", reports::add);
+        assertEquals(null, transport.requests.get(0).bearer());
+    }
+
+    @Test
+    void apiKeyIsMaskedInListings() {
+        assertEquals("not set", Settings.maskApiKey(""));
+        assertEquals("set (...cdef)", Settings.maskApiKey("uqk_0123456789abcdef"));
+        assertEquals("set", Settings.maskApiKey("uqk_ab"));
+    }
+
 }

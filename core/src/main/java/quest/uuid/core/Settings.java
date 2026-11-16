@@ -34,4 +34,17 @@ public interface Settings {
     /** Look for a newer release on GitHub, at most every few hours. */
     boolean updateCheck();
 
+    /**
+     * Optional uuid.quest API key ({@code uqk_...}) that credits submissions to an account and its
+     * leaderboard entry; empty submits anonymously. An unknown key is treated as anonymous by uuid.quest.
+     */
+    String apiKey();
+
+    /** For settings listings: whether a key is set and its last four characters, never the key itself. */
+    static String maskApiKey(String key) {
+        String trimmed = key == null ? "" : key.trim();
+        if (trimmed.isEmpty()) return "not set";
+        return trimmed.length() <= 8 ? "set" : "set (..." + trimmed.substring(trimmed.length() - 4) + ")";
+    }
+
 }

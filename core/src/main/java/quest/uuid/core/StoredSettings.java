@@ -27,6 +27,7 @@ public final class StoredSettings implements Settings {
         AnnounceMode announce = AnnounceMode.NOTIFICATION;
         boolean verbose = false;
         boolean updateCheck = true;
+        String apiKey = "";
 
         Values copy() {
             return GSON.fromJson(GSON.toJson(this), Values.class);
@@ -36,6 +37,7 @@ public final class StoredSettings implements Settings {
             interval = clampInterval(interval);
             note = note == null ? "" : cleanNote(note);
             if (announce == null) announce = AnnounceMode.NOTIFICATION;
+            apiKey = apiKey == null ? "" : apiKey.trim();
         }
     }
 
@@ -92,6 +94,7 @@ public final class StoredSettings implements Settings {
             v.announce = from.announce();
             v.verbose = from.verbose();
             v.updateCheck = from.updateCheck();
+            v.apiKey = from.apiKey();
         });
     }
 
@@ -129,6 +132,10 @@ public final class StoredSettings implements Settings {
 
     public void setUpdateCheck(boolean value) {
         update(v -> v.updateCheck = value);
+    }
+
+    public void setApiKey(String value) {
+        update(v -> v.apiKey = value);
     }
 
     /** Writes a temporary file and moves it over the old one, so a crash mid-write keeps the previous file. */
@@ -195,6 +202,11 @@ public final class StoredSettings implements Settings {
     @Override
     public boolean updateCheck() {
         return values.updateCheck;
+    }
+
+    @Override
+    public String apiKey() {
+        return values.apiKey;
     }
 
 }

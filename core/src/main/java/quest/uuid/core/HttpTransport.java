@@ -26,6 +26,7 @@ public final class HttpTransport implements Transport {
         var builder = HttpRequest.newBuilder(request.uri())
             .timeout(request.timeout())
             .header("User-Agent", request.userAgent());
+        if (request.bearer() != null) builder.header("Authorization", "Bearer " + request.bearer());
         if (request.body() == null) {
             builder.GET();
         } else {

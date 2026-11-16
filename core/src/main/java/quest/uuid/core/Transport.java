@@ -9,8 +9,12 @@ import java.util.concurrent.CompletableFuture;
 /** HTTP as the submitter needs it; {@link HttpTransport} in the game, a fake in tests. */
 public interface Transport {
 
-    /** {@code body} is null for a GET. */
-    record Request(URI uri, String body, Duration timeout, String userAgent) {
+    /** {@code body} is null for a GET; {@code bearer} is an API key sent as {@code Authorization: Bearer}, or null. */
+    record Request(URI uri, String body, Duration timeout, String userAgent, String bearer) {
+
+        public Request(URI uri, String body, Duration timeout, String userAgent) {
+            this(uri, body, timeout, userAgent, null);
+        }
     }
 
     record Response(int status, Optional<String> contentType, Optional<String> retryAfter, String body) {

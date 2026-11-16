@@ -51,6 +51,7 @@ public final class UuidQuest {
         this.clock = clock;
         this.userAgent = userAgent;
         this.submitter = new Submitter(transport, history, guard, log, clock, userAgent);
+        submitter.setApiKey(settings::apiKey);
         submitter.setOnAbuseThrottled(seconds ->
             warn("uuid.quest is blocking this network for " + seconds / 60 + " min after too many fake UUIDs"));
     }
